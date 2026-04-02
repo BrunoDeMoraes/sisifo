@@ -175,3 +175,5 @@ cython_debug/
 
 #Arquivos aleatórios e lixo
 prompts.txt
+
+procurement/management/commands/imports/*.json
