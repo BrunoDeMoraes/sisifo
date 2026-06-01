@@ -1,93 +1,97 @@
 from django.db import models
+from django.core.validators import MinLengthValidator, RegexValidator
 
-# Create your models here.
 class Servidor(models.Model):
-    matricula = models.CharField(
+    id_servidor = models.CharField(
+        max_length=20,
         primary_key=True,
-        max_length=12,
-        verbose_name='Número de Matrícula'
+        verbose_name="Matrícula",
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='A matrícula deve conter apenas números.',
+                code='invalid_matricula'
+            )
+        ],
+        help_text="Matrícula funcional do servidor (apenas números)"
     )
-    
     nome = models.CharField(
-        max_length=30
+        max_length=30,
+        validators=[MinLengthValidator(3)],
+        verbose_name="Nome Completo"
+    )
+    email = models.EmailField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="E-mail"
+    )
+    ativo = models.BooleanField(
+        default=True,
+        verbose_name="Ativo"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
     )
 
-    def __str__(self) -> str:
-        return f"{self.nome}"
+    class Meta:
+        db_table = 'servidor'
+        verbose_name = 'Servidor'
+        verbose_name_plural = 'Servidores'
+        ordering = ['nome']
+
+    def __str__(self):
+        return f"{self.id_servidor} - {self.nome}"
+
+    def save(self, *args, **kwargs):
+        # Normalização de dados
+        self.id_servidor = self.id_servidor.strip()
+        self.nome = self.nome.strip().title()
+        if self.email:
+            self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)   
 
 
 class Processo(models.Model):
 
-    # Chave primária auto gerada
-    cotacao = models.AutoField(primary_key=True)
+    class CategoriaChoices(models.TextChoices):
+        CUSTEIO = 'CS', 'Custeio'
+        INVESTIMENTO = 'IN', 'Investimento'
 
-    # Número do processo SEI — único na tabela
-    processo_sei = models.CharField(
+    id_processo = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Processo"
+    )
+    numero_sei = models.CharField(
         max_length=30,
         unique=True,
-        verbose_name='Processo SEI',
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='O número SEI deve conter apenas números.',
+                code='invalid_numero_sei'
+            )
+        ],
+        verbose_name="Número SEI"
     )
-
-    # Número do Termo de Referência
-    numero_tr = models.CharField(
-        max_length=10,
-        verbose_name='Número do TR',
+    categoria = models.CharField(
+        max_length=2,
+        choices=CategoriaChoices.choices,
+        default=CategoriaChoices.CUSTEIO,
+        verbose_name="Categoria Econômica"
     )
-
-    # Setor de origem do Termo de Referência
-    origem_tr = models.CharField(
-        max_length=20,
-        verbose_name='Origem do TR',
+    data_recebimento = models.DateField(
+        verbose_name="Data de Recebimento"
     )
-
-    # Órgão executor da cotação
-    unidade = models.CharField(
-        max_length=20,
-        verbose_name='Unidade',
-    )
-
-    # Tipo de verba — validação feita na interface
-    categoria_economica = models.CharField(
-        max_length=30,
-        verbose_name='Categoria Econômica',
-    )
-
-    # Data de recebimento na unidade
-    data = models.DateField(
-        verbose_name='Data de Recebimento',
-    )
-
-    # FK para o servidor responsável
-    servidor = models.ForeignKey(
+    id_servidor = models.ForeignKey(
         'Servidor',
         on_delete=models.PROTECT,
-        related_name='processos',
-        null=True,
-        blank=True,
-        verbose_name='Servidor Responsável',
+        db_column='id_servidor',
+        verbose_name="Servidor Responsável"
     )
 
-    # Campo textual livre para observações
-    observacao = models.TextField(
-        blank=True,
-        default='',
-        verbose_name='Observação',
-    )
-
-    # Campos de auditoria
-    criado_em = models.DateTimeField(auto_now_add=True)
-    atualizado_em = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'processo'
-        verbose_name = 'Processo'
-        verbose_name_plural = 'Processos'
-        ordering = ['-data', 'processo_sei']
-        indexes = [
-            models.Index(fields=['data'], name='idx_processo_data'),
-            models.Index(fields=['servidor'], name='idx_processo_servidor'),
-            models.Index(fields=['categoria_economica'], name='idx_processo_categoria'),
-        ]
-
-    def __str__(self):
-        return f'Processo SEI {self.processo_sei} — Cotação #{self.cotacao}'

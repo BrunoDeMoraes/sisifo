@@ -1,0 +1,104 @@
+O objetivo geral deste banco de dados é registrar e controlar os elementos que compõe um processo de aquisição.
+
+
+Servidor
+    Descrição
+        Tabela que registra informações dos servidores envolvidos nos processos de aquisição. A matrícula funcional
+        é utilizada como chave primária natural, garantindo unicidade e rastreabilidade. A tabela implementa soft delete
+        através do campo ativo, preservando o histórico de participação dos servidores mesmo após desativação.
+        Campos de auditoria (data_cadastro e data_atualizacao) foram incluídos para rastreamento temporal das operações.
+
+    Campos
+        id_servidor: Chave primária natural, texto com validação para aceitar apenas valores numéricos (matrícula funcional).
+         Comprimento máximo de 20 caracteres. Aplicação automática de .strip() na gravação para remover espaços em branco.
+
+        nome: Texto, not null, not blank. Comprimento máximo de 30 caracteres e mínimo de 3 caracteres. Aplicação automática de
+        .strip() e formatação em title case na gravação para padronização.
+
+
+        email: Texto (e-mail), opcional (blank=True, null=True). Comprimento máximo de 100 caracteres. Validação automática de
+        formato de e-mail pelo Django. Aplicação automática de .strip() e conversão para lowercase na gravação.
+
+
+        ativo: Booleano, not null, valor padrão True. Implementa soft delete, permitindo desativar servidores sem perder o
+        histórico de suas participações em processos de aquisição.
+
+
+        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
+        Utilizado para auditoria e rastreamento temporal.
+
+
+        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
+        Utilizado para auditoria e controle de alterações.
+
+Processo
+
+    Descrição
+        A tabela terá como objetivo registrar os processos recebidos no setor.
+        A chave primária será automaticamente gerada.
+        Terá um campo pra registrar o número de processo SEI. Este campo deverá ser do formato texto,
+        contudo aceitando apenas os caracteres numéricos.
+        Demonstrará a categoria economica por meio por meio das opções Custeio ou Investimento.
+        Um campo do tipo data que registrará a data de recebimento do processo no setor.
+        Deverá indicar a data de recebimento do processo no setor.
+        Cada instância de processo será atribuída a um servidor, os valores cabíveis a este campo serão
+        chave estrangeira referente à tabela servidor.
+        Campo para observações pertinentes.
+
+
+    Campos
+        id_processo: chave primária, texto;
+        numero_sei: texto, not null
+        categoria: texto, opções(Custeio, Investimento);
+        data_recebimento: data, not null;
+        id_servidor: texto, chave estrangeira referencia tabela Servidor;
+        observacao: texto, null, blank.
+
+
+Termo
+
+    Descrição
+        A tabela tem como objetivo registrar informações de termos de referência inseridos em cada processo.
+        Terá uma chave primária auto gerada.
+        Indicará em qual processo SEI está inserido, qual sua origem (HRG, APS) e setor (NFH, Nual, etc),
+        bem como o número que é adotado em seu setor para referência e será atriuída a um ano específico.
+        Deve demonstrar o status atual, isto é, se está ativo, inativo ou pendente.
+
+    Campos
+        id_termo: chave primária auto gerada;
+        id_processo: chave estrangeira referente à tabela Processo, texto;
+        origem: texto;
+        setor: texto;
+        numero: texto;
+        ano: texto;
+        status: texto, opções (ativo, inativo ou pendente)
+
+  
+Cotacao
+
+    Descrição
+        Terá como função ativar um ternmo de referência e vincular a um servidor.
+        Dará origem às aquisições, que será a combinação entre uma cotação e um ou mais itens.
+
+
+    Campos
+        id_cotacao: chave primária auto gerada;
+        termo: chave estrangeira referente a tabela Termo;
+        servidor: chave estrangeira referente a tabela servidor
+
+
+Item    
+
+    Descrição
+        Essa tabela tem a função de intermediário entre cotação e os produtos e serviços que serão
+        cada instãncia de aquisição. A chave primaria deverá ser subrogada para evitar duplicação de
+        dados em outras tabelas do banco de dados onde será utilizada como chave estrangeira.
+
+
+Conta
+
+    Descrição
+        Tabela responsável por armazenar as informações de contas bancárias da Regional. Além de idenficar
+        a conta por número e CNPJ. o campo função identificará se trata-se uma conta de pagamento ou meramente
+        de transferência. Sua categoria economia (Investimento ou Custeio) e se é uma conta que recebe recursos
+        regulares ou emendas como fonte.
