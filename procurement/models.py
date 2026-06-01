@@ -95,3 +95,35 @@ class Processo(models.Model):
         verbose_name="Servidor Responsável"
     )
 
+
+class Origem(models.Model):
+    id_origem = models.AutoField(
+        primary_key=True,
+        verbose_name="ID da Origem"
+    )
+    unidade = models.CharField(
+        max_length=15,
+        unique=True,
+        verbose_name="Unidade"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'origem'
+        verbose_name = 'Origem'
+        verbose_name_plural = 'Origens'
+        ordering = ['unidade']
+
+    def __str__(self):
+        return self.unidade
+
+    def save(self, *args, **kwargs):
+        self.unidade = self.unidade.strip().upper()
+        super().save(*args, **kwargs)

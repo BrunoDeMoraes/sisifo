@@ -64,19 +64,32 @@ Processo
         data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
          Utilizado para auditoria e rastreamento temporal.
 
-        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
+        Utilizado para auditoria e controle de alterações.
 
 
 Origem
 
     Descrição
-        Tabela que registra os possíveis locais de unidade de origem para um termo de referência.
-        Além de chave primária auto gerada terá apenas um campo para idenficação da unidade que 
-        será um campo de texto.
+        Tabela de domínio que registra as unidades organizacionais de origem para termos de referência.
+        Por ser uma tabela relativamente estática e de pequeno porte, sua estrutura é simples, contendo
+        apenas o identificador automático e o nome da unidade. A unicidade do campo unidade garante que
+        não haja duplicidade de registros. Campos de auditoria foram incluídos para manter consistência
+        com o padrão estabelecido no projeto
 
     Campos
-        id_origem: chave primária auto gerada;
-        unidade: texto, unique;
+        id_origem: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não
+        requer preenchimento manual.
+
+        unidade: Texto, not null, not blank, unique. Comprimento máximo de 15 caracteres. Identifica o
+        nome da unidade organizacional de origem. Aplicação automática de .strip() e conversão para maiúsculas
+        (.upper()) na gravação para padronização institucional.
+
+        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
+        Utilizado para auditoria e rastreamento temporal.
+        
+        ata_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
+        Utilizado para auditoria e controle de alterações.
 
 
 Termo
