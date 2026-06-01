@@ -34,31 +34,57 @@ Servidor
 Processo
 
     Descrição
-        A tabela terá como objetivo registrar os processos recebidos no setor.
-        A chave primária será automaticamente gerada.
-        Terá um campo pra registrar o número de processo SEI. Este campo deverá ser do formato texto,
-        contudo aceitando apenas os caracteres numéricos.
-        Demonstrará a categoria economica por meio por meio das opções Custeio ou Investimento.
-        Um campo do tipo data que registrará a data de recebimento do processo no setor.
-        Deverá indicar a data de recebimento do processo no setor.
-        Cada instância de processo será atribuída a um servidor, os valores cabíveis a este campo serão
-        chave estrangeira referente à tabela servidor.
-        Campo para observações pertinentes.
-
+        Tabela que registra os processos de aquisição recebidos no setor. A chave primária é gerada
+        automaticamente pelo banco de dados. O número SEI é utilizado como identificador único do processo
+        junto ao sistema eletrônico de informações, aceitando apenas valores numéricos apesar de armazenado
+        como texto. A categoria econômica é restrita às opções Custeio e Investimento, armazenadas de forma
+        abreviada no banco. Cada processo é obrigatoriamente vinculado a um servidor responsável, sendo impedida
+        a exclusão de servidores com processos associados. Campos de auditoria foram incluídos para rastreamento
+        temporal das operações.
 
     Campos
-        id_processo: chave primária, texto;
-        numero_sei: texto, not null
-        categoria: texto, opções(Custeio, Investimento);
-        data_recebimento: data, not null;
-        id_servidor: texto, chave estrangeira referencia tabela Servidor;
-        observacao: texto, null, blank.
+        id_processo: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField).
+        Não requer preenchimento manual.
+
+        numero_sei: Texto, not null, unique. Comprimento máximo de 30 caracteres. Aceita apenas valores
+        numéricos, validado via RegexValidator(r'^\d+$'). Aplicação automática de .strip() na gravação
+        para remover espaços em branco.
+
+        categoria: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções CS (Custeio)
+        e IN (Investimento) via TextChoices. O banco armazena a abreviação e a aplicação exibe o texto completo.
+
+        data_recebimento: Data, not null. Registra a data de recebimento do processo no setor.
+
+        id_servidor: Chave estrangeira, not null, referencia a tabela servidor pelo campo id_servidor.
+        Utiliza on_delete=PROTECT, impedindo a exclusão de servidores que possuam processos vinculados.
+
+        observacao: Texto longo (TextField), opcional (blank=True, null=True). Destinado ao registro de
+        informações adicionais pertinentes ao processo. Aplicação automática de .strip() na gravação quando preenchido.
+
+        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
+         Utilizado para auditoria e rastreamento temporal.
+
+        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Origem
+
+    Descrição
+        Tabela que registra os possíveis locais de unidade de origem para um termo de referência.
+        Além de chave primária auto gerada terá apenas um campo para idenficação da unidade que 
+        será um campo de texto.
+
+    Campos
+        id_origem: chave primária auto gerada;
+        unidade: texto, unique;
 
 
 Termo
 
     Descrição
         A tabela tem como objetivo registrar informações de termos de referência inseridos em cada processo.
+        Isto é, um termo de referencia só pode estar inserido em um processo, mas um processo pode conter vários
+        termos de referencia.
         Terá uma chave primária auto gerada.
         Indicará em qual processo SEI está inserido, qual sua origem (HRG, APS) e setor (NFH, Nual, etc),
         bem como o número que é adotado em seu setor para referência e será atriuída a um ano específico.
@@ -66,7 +92,7 @@ Termo
 
     Campos
         id_termo: chave primária auto gerada;
-        id_processo: chave estrangeira referente à tabela Processo, texto;
+        id_processo: chave estrangeira referente à tabela Processo;
         origem: texto;
         setor: texto;
         numero: texto;
