@@ -127,3 +127,47 @@ class Origem(models.Model):
     def save(self, *args, **kwargs):
         self.unidade = self.unidade.strip().upper()
         super().save(*args, **kwargs)
+
+
+class Setor(models.Model):
+    id_setor = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Setor"
+    )
+    id_origem = models.ForeignKey(
+        'Origem',
+        on_delete=models.PROTECT,
+        db_column='id_origem',
+        verbose_name="Origem"
+    )
+    nome_setor = models.CharField(
+        max_length=20,
+        verbose_name="Nome do Setor"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'setor'
+        verbose_name = 'Setor'
+        verbose_name_plural = 'Setores'
+        ordering = ['id_origem', 'nome_setor']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['id_origem', 'nome_setor'],
+                name='unique_setor_por_origem'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.id_origem.unidade} - {self.nome_setor}"
+
+    def save(self, *args, **kwargs):
+        self.nome_setor = self.nome_setor.strip().upper()
+        super().save(*args, **kwargs)

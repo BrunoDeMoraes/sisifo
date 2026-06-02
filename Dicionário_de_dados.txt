@@ -2,6 +2,7 @@ O objetivo geral deste banco de dados é registrar e controlar os elementos que 
 
 
 Servidor
+
     Descrição
         Tabela que registra informações dos servidores envolvidos nos processos de aquisição. A matrícula funcional
         é utilizada como chave primária natural, garantindo unicidade e rastreabilidade. A tabela implementa soft delete
@@ -90,6 +91,31 @@ Origem
         
         ata_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
         Utilizado para auditoria e controle de alterações.
+
+setor
+
+    Descrição
+        Tabela de domínio que registra os setores específicos vinculados a uma unidade de origem, permitindo identificar
+        com precisão a área organizacional responsável pela geração de um termo de referência. Cada setor pertence
+        obrigatoriamente a uma origem, sendo impedida a exclusão de origens que possuam setores vinculados. A combinação
+        entre origem e setor é única, evitando duplicidade de setores dentro de uma mesma unidade organizacional.
+        Campos de auditoria foram incluídos para manter consistência com o padrão estabelecido no projeto.
+
+    Campos
+        id_setor: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+        id_origem: Chave estrangeira, not null, referencia a tabela origem pelo campo id_origem. Utiliza on_delete=PROTECT,
+        impedindo a exclusão de origens que possuam setores vinculados.
+
+        nome_setor: Texto, not null, not blank. Comprimento máximo de 20 caracteres. Identifica o nome do setor dentro da unidade
+        de origem. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação para padronização institucional.
+
+        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
+        Utilizado para auditoria e rastreamento temporal.
+
+        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
+        Utilizado para auditoria e controle de alterações.
+
 
 
 Termo
