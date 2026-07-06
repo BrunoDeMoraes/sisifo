@@ -121,22 +121,37 @@ setor
 Termo
 
     Descrição
-        A tabela tem como objetivo registrar informações de termos de referência inseridos em cada processo.
-        Isto é, um termo de referencia só pode estar inserido em um processo, mas um processo pode conter vários
-        termos de referencia.
-        Terá uma chave primária auto gerada.
-        Indicará em qual processo SEI está inserido, qual sua origem (HRG, APS) e setor (NFH, Nual, etc),
-        bem como o número que é adotado em seu setor para referência e será atriuída a um ano específico.
-        Deve demonstrar o status atual, isto é, se está ativo, inativo ou pendente.
+        Tabela que registra os termos de referência que dão origem às aquisições. Cada termo é obrigatoriamente vinculado
+        a um processo e a um setor, sendo impedida a exclusão de processos e setores com termos associados. Um processo pode
+        possuir múltiplos termos, contudo apenas um termo pode estar ativo por processo simultaneamente. Ao ativar um novo termo,
+        os demais termos do mesmo processo são automaticamente inativados, regra garantida tanto pelo método save() para operações
+        via ORM quanto por triggers no banco de dados para operações diretas via SQL. O ano é preenchido automaticamente com o ano
+        corrente no momento do cadastro. Campos de auditoria foram incluídos para rastreamento temporal das operações.
 
     Campos
-        id_termo: chave primária auto gerada;
-        id_processo: chave estrangeira referente à tabela Processo;
-        origem: texto;
-        setor: texto;
-        numero: texto;
-        ano: texto;
-        status: texto, opções (ativo, inativo ou pendente)
+        id_termo: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+        
+        id_processo: Chave estrangeira, not null, referencia a tabela processo pelo campo id_processo. Utiliza on_delete=PROTECT,
+        impedindo a exclusão de processos que possuam termos vinculados.
+        
+        id_setor: Chave estrangeira, not null, referencia a tabela setor pelo campo id_setor. Utiliza on_delete=PROTECT, impedindo
+        a exclusão de setores que possuam termos vinculados.
+
+        rotulo: Texto, not null, not blank. Comprimento máximo de 6 caracteres. Aceita qualquer caractere. Aplicação automática de
+        .strip() na gravação para remover espaços em branco. Compõe a constraint de unicidade junto com id_setor e ano.
+
+        ano: Inteiro, not null. Preenchido automaticamente com o ano corrente via função ano_atual() definida como valor padrão.
+        Compõe a constraint de unicidade junto com id_setor e rotulo.
+
+        status: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções AT (Ativo) e IN (Inativo) via TextChoices.
+        Valor padrão AT (Ativo). Apenas um termo pode estar ativo por processo simultaneamente.
+        
+        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
+        Utilizado para auditoria e rastreamento temporal.
+        
+        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
+        Utilizado para auditoria e controle de alterações.
+
 
   
 Cotacao
