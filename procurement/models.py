@@ -424,3 +424,272 @@ class Servico(models.Model):
             self.observacao = self.observacao.strip()
         super().save(*args, **kwargs)
 
+
+class Conta(models.Model):
+
+    class FuncaoChoices(models.TextChoices):
+        PAGAMENTO = 'PG', 'Pagamento'
+        TRANSFERENCIA = 'TR', 'Transferência'
+
+    class CategoriaChoices(models.TextChoices):
+        CUSTEIO = 'CS', 'Custeio'
+        INVESTIMENTO = 'IN', 'Investimento'
+
+    class RecursoChoices(models.TextChoices):
+        REGULAR = 'RG', 'Regular'
+        EMENDA = 'EM', 'Emenda'
+
+    id_conta = models.AutoField(
+        primary_key=True,
+        verbose_name="ID da Conta"
+    )
+    unidade = models.CharField(
+        max_length=15,
+        verbose_name="Unidade"
+    )
+    agencia = models.CharField(
+        max_length=6,
+        verbose_name="Agência"
+    )
+    numero = models.CharField(
+        max_length=10,
+        verbose_name="Número"
+    )
+    cnpj = models.CharField(
+        max_length=14,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='O CNPJ deve conter apenas números.',
+                code='invalid_cnpj'
+            )
+        ],
+        verbose_name="CNPJ"
+    )
+    funcao = models.CharField(
+        max_length=2,
+        choices=FuncaoChoices.choices,
+        verbose_name="Função"
+    )
+    categoria_economica = models.CharField(
+        max_length=2,
+        choices=CategoriaChoices.choices,
+        verbose_name="Categoria Econômica"
+    )
+    recurso = models.CharField(
+        max_length=2,
+        choices=RecursoChoices.choices,
+        verbose_name="Recurso"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'conta'
+        verbose_name = 'Conta'
+        verbose_name_plural = 'Contas'
+        ordering = ['unidade']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['unidade', 'agencia', 'numero'],
+                name='unique_conta'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.unidade} - {self.agencia}/{self.numero}"
+
+    def save(self, *args, **kwargs):
+        self.unidade = self.unidade.strip().upper()
+        self.agencia = self.agencia.strip()
+        self.numero = self.numero.strip()
+        self.cnpj = self.cnpj.strip()
+        super().save(*args, **kwargs)
+
+
+class Recurso(models.Model):
+    id_recurso = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Recurso"
+    )
+    id_conta = models.ForeignKey(
+        'Conta',
+        on_delete=models.PROTECT,
+        db_column='id_conta',
+        related_name='recursos',
+        verbose_name="Conta"
+    )
+    exercicio = models.IntegerField(
+        default=ano_atual,
+        verbose_name="Exercício"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'recurso'
+        verbose_name = 'Recurso'
+        verbose_name_plural = 'Recursos'
+        ordering = ['-exercicio', 'id_conta']
+
+    def __str__(self):
+        return f"{self.id_conta} - {self.exercicio}"
+
+    def save(self, *args, **kwargs):
+        # Durante criação usa id_conta_id diretamente
+        conta = Conta.objects.filter(pk=self.id_conta_id).first()
+        if conta and conta.recurso == Conta.RecursoChoices.REGULAR:
+            if Recurso.objects.filter(
+                id_conta_id=self.id_conta_id,
+                exercicio=self.exercicio
+            ).exclude(pk=self.pk).exists():
+                raise ValueError(
+                    'Já existe um recurso regular para esta conta neste exercício'
+                )
+        super().save(*args, **kwargs)
+
+
+
+class Emenda(Recurso):
+    oficio = models.CharField(
+        max_length=10,
+        verbose_name="Ofício"
+    )
+    numero = models.CharField(
+        max_length=12,
+        verbose_name="Número"
+    )
+    valor = models.DecimalField(
+        max_digits=11,
+        decimal_places=2,
+        verbose_name="Valor"
+    )
+    parlamentar = models.CharField(
+        max_length=30,
+        verbose_name="Parlamentar"
+    )
+    destinacao = models.TextField(
+        verbose_name="Destinação"
+    )
+    data_recebimento = models.DateField(
+        verbose_name="Data de Recebimento"
+    )
+    extrato = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Extrato"
+    )
+    sei = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='O SEI deve conter apenas números.',
+                code='invalid_sei'
+            )
+        ],
+        verbose_name="SEI"
+    )
+    observacao = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Observações"
+    )
+
+    class Meta:
+        db_table = 'emenda'
+        verbose_name = 'Emenda'
+        verbose_name_plural = 'Emendas'
+        ordering = ['-recurso_ptr__exercicio', 'parlamentar']
+
+    def __str__(self):
+        return f"Emenda {self.numero} - {self.parlamentar}"
+
+    def save(self, *args, **kwargs):
+        # Busca a conta via recurso pai se existir, senão usa id_conta_id diretamente
+        if self.recurso_ptr_id:
+            recurso = Recurso.objects.filter(pk=self.recurso_ptr_id).first()
+            conta = Conta.objects.filter(pk=recurso.id_conta_id).first() if recurso else None
+        else:
+            conta = Conta.objects.filter(pk=self.id_conta_id).first()
+        
+        if conta and conta.recurso != Conta.RecursoChoices.EMENDA:
+            raise ValueError('Emendas só podem ser vinculadas a contas do tipo Emenda')
+        
+        self.oficio = self.oficio.strip().upper()
+        self.numero = self.numero.strip().upper()
+        self.parlamentar = self.parlamentar.strip().title()
+        self.destinacao = self.destinacao.strip()
+        if self.sei:
+            self.sei = self.sei.strip()
+        if self.extrato:
+            self.extrato = self.extrato.strip()
+        if self.observacao:
+            self.observacao = self.observacao.strip()
+        super().save(*args, **kwargs)
+
+
+
+class Regular(models.Model):
+    id_regular = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Regular"
+    )
+    id_recurso = models.ForeignKey(
+        'Recurso',
+        on_delete=models.PROTECT,
+        db_column='id_recurso',
+        verbose_name="Recurso"
+    )
+    valor = models.DecimalField(
+        max_digits=11,
+        decimal_places=2,
+        verbose_name="Valor"
+    )
+    data_recebimento = models.DateField(
+        verbose_name="Data de Recebimento"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'regular'
+        verbose_name = 'Regular'
+        verbose_name_plural = 'Regulares'
+        ordering = ['-data_recebimento']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['id_recurso', 'valor', 'data_recebimento'],
+                name='unique_regular'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.id_recurso} - {self.valor}"
+
+    def save(self, *args, **kwargs):
+        # Valida tipo da Conta
+        if self.id_recurso.id_conta.recurso != Conta.RecursoChoices.REGULAR:
+            raise ValueError('Recursos regulares só podem ser vinculados a contas do tipo Regular')
+        super().save(*args, **kwargs)
+
