@@ -11,6 +11,14 @@ from .models import Conta
 from .models import Recurso
 from .models import Regular
 from .models import Emenda
+from .models import Fornecedor
+from .models import Contato
+from .models import Area
+from .models import ContatoArea
+from .models import Banco
+from .models import ContaFornecedor
+
+
 
 admin.site.register(Servidor)
 admin.site.register(Processo)
@@ -23,4 +31,10 @@ admin.site.register(Servico)
 admin.site.register(Conta)
 admin.site.register(Recurso)
 admin.site.register(Regular)
-admin.site.register(Emenda) 
+admin.site.register(Emenda)
+admin.site.register(Fornecedor) 
+admin.site.register(Contato)
+admin.site.register(Area)
+admin.site.register(ContatoArea)
+admin.site.register(Banco)
+admin.site.register(ContaFornecedor)

@@ -586,7 +586,8 @@ class Emenda(Recurso):
     data_recebimento = models.DateField(
         verbose_name="Data de Recebimento"
     )
-    extrato = models.TextField(
+    extrato = models.CharField(
+        max_length=40,
         blank=True,
         null=True,
         verbose_name="Extrato"
@@ -693,3 +694,359 @@ class Regular(models.Model):
             raise ValueError('Recursos regulares só podem ser vinculados a contas do tipo Regular')
         super().save(*args, **kwargs)
 
+
+class Fornecedor(models.Model):
+
+    class UFChoices(models.TextChoices):
+        AC = 'AC', 'Acre'
+        AL = 'AL', 'Alagoas'
+        AP = 'AP', 'Amapá'
+        AM = 'AM', 'Amazonas'
+        BA = 'BA', 'Bahia'
+        CE = 'CE', 'Ceará'
+        DF = 'DF', 'Distrito Federal'
+        ES = 'ES', 'Espírito Santo'
+        GO = 'GO', 'Goiás'
+        MA = 'MA', 'Maranhão'
+        MT = 'MT', 'Mato Grosso'
+        MS = 'MS', 'Mato Grosso do Sul'
+        MG = 'MG', 'Minas Gerais'
+        PA = 'PA', 'Pará'
+        PB = 'PB', 'Paraíba'
+        PR = 'PR', 'Paraná'
+        PE = 'PE', 'Pernambuco'
+        PI = 'PI', 'Piauí'
+        RJ = 'RJ', 'Rio de Janeiro'
+        RN = 'RN', 'Rio Grande do Norte'
+        RS = 'RS', 'Rio Grande do Sul'
+        RO = 'RO', 'Rondônia'
+        RR = 'RR', 'Roraima'
+        SC = 'SC', 'Santa Catarina'
+        SP = 'SP', 'São Paulo'
+        SE = 'SE', 'Sergipe'
+        TO = 'TO', 'Tocantins'
+
+    id_fornecedor = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Fornecedor"
+    )
+    cnpj_fornecedor = models.CharField(
+        max_length=14,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='O CNPJ deve conter apenas números.',
+                code='invalid_cnpj'
+            )
+        ],
+        verbose_name="CNPJ"
+    )
+    razao_social = models.CharField(
+        max_length=100,
+        verbose_name="Razão Social"
+    )
+    nome_fantasia = models.CharField(
+        max_length=40,
+        verbose_name="Nome Fantasia"
+    )
+    codigo_sis = models.CharField(
+        max_length=10,
+        unique=True,
+        blank=True,
+        null=True,
+        verbose_name="Código SIS"
+    )
+    uf = models.CharField(
+        max_length=2,
+        choices=UFChoices.choices,
+        verbose_name="UF"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'fornecedor'
+        verbose_name = 'Fornecedor'
+        verbose_name_plural = 'Fornecedores'
+        ordering = ['razao_social']
+
+    def __str__(self):
+        return f"{self.cnpj_fornecedor} - {self.razao_social}"
+
+    def save(self, *args, **kwargs):
+        self.cnpj_fornecedor = self.cnpj_fornecedor.strip()
+        self.razao_social = self.razao_social.strip().upper()
+        self.nome_fantasia = self.nome_fantasia.strip().upper()
+        if self.codigo_sis:
+            self.codigo_sis = self.codigo_sis.strip().upper()
+        super().save(*args, **kwargs)
+
+
+class Contato(models.Model):
+    id_contato = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Contato"
+    )
+    cnpj_fornecedor = models.ForeignKey(
+        'Fornecedor',
+        on_delete=models.PROTECT,
+        db_column='cnpj_fornecedor',
+        to_field='cnpj_fornecedor',
+        verbose_name="Fornecedor"
+    )
+    email = models.EmailField(
+        verbose_name="E-mail"
+    )
+    contato = models.CharField(
+        max_length=40,
+        verbose_name="Contato"
+    )
+    telefone = models.CharField(
+        max_length=11,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='O telefone deve conter apenas números.',
+                code='invalid_telefone'
+            )
+        ],
+        verbose_name="Telefone"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'contato'
+        verbose_name = 'Contato'
+        verbose_name_plural = 'Contatos'
+        ordering = ['cnpj_fornecedor', 'contato']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['cnpj_fornecedor', 'email'],
+                name='unique_email_por_fornecedor'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['cnpj_fornecedor']),
+        ]
+
+    def __str__(self):
+        return f"{self.cnpj_fornecedor} - {self.contato}"
+
+    def save(self, *args, **kwargs):
+        self.email = self.email.strip().lower()
+        self.contato = self.contato.strip().title()
+        self.telefone = self.telefone.strip()
+        super().save(*args, **kwargs)
+
+
+class Area(models.Model):
+    id_area = models.AutoField(
+        primary_key=True,
+        verbose_name="ID da Área"
+    )
+    atuacao = models.CharField(
+        max_length=40,
+        unique=True,
+        verbose_name="Área de Atuação"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'area'
+        verbose_name = 'Área'
+        verbose_name_plural = 'Áreas'
+        ordering = ['atuacao']
+
+    def __str__(self):
+        return self.atuacao
+
+    def save(self, *args, **kwargs):
+        self.atuacao = self.atuacao.strip().upper()
+        super().save(*args, **kwargs)
+
+
+class ContatoArea(models.Model):
+    id_contato_area = models.AutoField(
+        primary_key=True,
+        verbose_name="ID Contato Área"
+    )
+    id_contato = models.ForeignKey(
+        'Contato',
+        on_delete=models.PROTECT,
+        db_column='id_contato',
+        verbose_name="Contato"
+    )
+    id_area = models.ForeignKey(
+        'Area',
+        on_delete=models.PROTECT,
+        db_column='id_area',
+        verbose_name="Área"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'contato_area'
+        verbose_name = 'Contato Área'
+        verbose_name_plural = 'Contatos Áreas'
+        ordering = ['id_contato', 'id_area']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['id_contato', 'id_area'],
+                name='unique_contato_area'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.id_contato} - {self.id_area}"
+
+
+class Banco(models.Model):
+    id_banco = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Banco"
+    )
+    codigo_compe = models.CharField(
+        max_length=3,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='O código COMPE deve conter apenas números.',
+                code='invalid_codigo_compe'
+            )
+        ],
+        verbose_name="Código COMPE"
+    )
+    nome = models.CharField(
+        max_length=40,
+        verbose_name="Nome do Banco"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'banco'
+        verbose_name = 'Banco'
+        verbose_name_plural = 'Bancos'
+        ordering = ['codigo_compe']
+
+    def __str__(self):
+        return f"{self.codigo_compe} - {self.nome}"
+
+    def save(self, *args, **kwargs):
+        self.codigo_compe = self.codigo_compe.strip()
+        self.nome = self.nome.strip().upper()
+        super().save(*args, **kwargs)
+
+
+class ContaFornecedor(models.Model):
+    id_conta_fornecedor = models.AutoField(
+        primary_key=True,
+        verbose_name="ID da Conta Fornecedor"
+    )
+    id_fornecedor = models.OneToOneField(
+        'Fornecedor',
+        on_delete=models.PROTECT,
+        db_column='id_fornecedor',
+        verbose_name="Fornecedor"
+    )
+    id_banco = models.ForeignKey(
+        'Banco',
+        on_delete=models.PROTECT,
+        db_column='id_banco',
+        verbose_name="Banco"
+    )
+    agencia = models.CharField(
+        max_length=6,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='A agência deve conter apenas números.',
+                code='invalid_agencia'
+            )
+        ],
+        verbose_name="Agência"
+    )
+    digito_agencia = models.CharField(
+        max_length=1,
+        blank=True,
+        null=True,
+        verbose_name="Dígito da Agência"
+    )
+    conta = models.CharField(
+        max_length=10,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='A conta deve conter apenas números.',
+                code='invalid_conta'
+            )
+        ],
+        verbose_name="Conta"
+    )
+    digito_conta = models.CharField(
+        max_length=1,
+        blank=True,
+        null=True,
+        verbose_name="Dígito da Conta"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'conta_fornecedor'
+        verbose_name = 'Conta Fornecedor'
+        verbose_name_plural = 'Contas Fornecedores'
+        ordering = ['id_fornecedor']
+
+    def __str__(self):
+        return f"{self.id_fornecedor} - {self.id_banco} - {self.agencia}/{self.conta}"
+
+    def save(self, *args, **kwargs):
+        self.agencia = self.agencia.strip()
+        if self.digito_agencia:
+            self.digito_agencia = self.digito_agencia.strip().upper()
+        self.conta = self.conta.strip()
+        if self.digito_conta:
+            self.digito_conta = self.digito_conta.strip().upper()
+        super().save(*args, **kwargs)
