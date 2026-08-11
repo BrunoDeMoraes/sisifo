@@ -1050,3 +1050,295 @@ class ContaFornecedor(models.Model):
         if self.digito_conta:
             self.digito_conta = self.digito_conta.strip().upper()
         super().save(*args, **kwargs)
+
+
+class LimiteAnual(models.Model):
+    id_limite = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Limite"
+    )
+    ano = models.IntegerField(
+        unique=True,
+        default=ano_atual,
+        verbose_name="Ano"
+    )
+    valor_limite = models.DecimalField(
+        max_digits=11,
+        decimal_places=2,
+        verbose_name="Valor Limite"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'limite_anual'
+        verbose_name = 'Limite Anual'
+        verbose_name_plural = 'Limites Anuais'
+        ordering = ['-ano']
+
+    def __str__(self):
+        return f"Limite {self.ano}: R$ {self.valor_limite}"
+
+
+class Aquisicao(models.Model):
+
+    id_aquisicao = models.AutoField(
+        primary_key=True,
+        verbose_name="ID da Aquisição"
+    )
+    id_termo = models.ForeignKey(
+        'Termo',
+        on_delete=models.PROTECT,
+        db_column='id_termo',
+        verbose_name="Termo"
+    )
+    id_item = models.ForeignKey(
+        'Item',
+        on_delete=models.PROTECT,
+        db_column='id_item',
+        verbose_name="Item"
+    )
+    id_servico = models.ForeignKey(
+        'Servico',
+        on_delete=models.PROTECT,
+        db_column='id_servico',
+        blank=True,
+        null=True,
+        verbose_name="Serviço"
+    )
+    quantidade_solicitada = models.IntegerField(
+        verbose_name="Quantidade Solicitada"
+    )
+    preco = models.DecimalField(
+        max_digits=15,
+        decimal_places=4,
+        blank=True,
+        null=True,
+        verbose_name="Preço Unitário"
+    )
+    quantidade_adquirida = models.IntegerField(
+        blank=True,
+        null=True,
+        verbose_name="Quantidade Adquirida"
+    )
+    id_recurso = models.ForeignKey(
+        'Recurso',
+        on_delete=models.PROTECT,
+        db_column='id_recurso',
+        blank=True,
+        null=True,
+        verbose_name="Recurso"
+    )
+    id_fornecedor = models.ForeignKey(
+        'Fornecedor',
+        on_delete=models.PROTECT,
+        db_column='id_fornecedor',
+        blank=True,
+        null=True,
+        verbose_name="Fornecedor"
+    )
+    data_ordem = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data da Ordem de Fornecimento"
+    )
+    sei_dodf = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d+$',
+                message='O SEI DODF deve conter apenas números.',
+                code='invalid_sei_dodf'
+            )
+        ],
+        verbose_name="SEI DODF"
+    )
+    data_publicacao = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data de Publicação"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'aquisicao'
+        verbose_name = 'Aquisição'
+        verbose_name_plural = 'Aquisições'
+        ordering = ['-data_cadastro']
+        indexes = [
+            models.Index(fields=['id_termo']),
+            models.Index(fields=['id_item']),
+            models.Index(fields=['id_fornecedor']),
+            models.Index(fields=['id_recurso']),
+            models.Index(fields=['data_ordem']),
+        ]
+
+    def __str__(self):
+        return f"Aquisição {self.id_aquisicao} - {self.id_item}"
+
+    def save(self, *args, **kwargs):
+        from django.db.models import Sum, F
+        from decimal import Decimal
+        
+
+        # Validação 1: id_servico × tipo do item
+        if self.id_servico_id:
+            if self.id_item.tipo != Item.TipoChoices.SERVICO:
+                raise ValueError(
+                    'O campo id_servico só pode ser preenchido para itens do tipo Serviço'
+                )
+            if self.id_servico.id_item_id != self.id_item_id:
+                raise ValueError(
+                    'O serviço indicado não pertence ao item selecionado'
+                )
+        if self.id_item.tipo == Item.TipoChoices.PRODUTO and self.id_servico_id:
+            raise ValueError(
+                'O campo id_servico não pode ser preenchido para itens do tipo Produto'
+            )
+
+        # Validação 2: quantidade_adquirida ≤ quantidade_solicitada
+        if self.quantidade_adquirida:
+            if self.quantidade_adquirida > self.quantidade_solicitada:
+                raise ValueError(
+                    'A quantidade adquirida não pode ser superior à quantidade solicitada'
+                )
+
+        # Validações financeiras só quando preco e quantidade_adquirida estiverem preenchidos
+        if self.preco and self.quantidade_adquirida:
+            valor_atual = Decimal(str(self.preco)) * Decimal(self.quantidade_adquirida)
+            ano_aquisicao = self.id_termo.ano
+
+            # Validação 3: Limite anual por item
+            try:
+                limite = LimiteAnual.objects.get(ano=ano_aquisicao)
+                soma_item = Aquisicao.objects.filter(
+                    id_item=self.id_item,
+                    id_termo__ano=ano_aquisicao,
+                    preco__isnull=False,
+                    quantidade_adquirida__isnull=False
+                ).exclude(pk=self.pk).aggregate(
+                    total=Sum(F('preco') * F('quantidade_adquirida'))
+                )['total'] or 0
+
+                if soma_item + valor_atual > limite.valor_limite:
+                    raise ValueError(
+                        f'Limite anual de R$ {limite.valor_limite} '
+                        f'para este item seria ultrapassado. '
+                        f'Valor já utilizado: R$ {soma_item}. '
+                        f'Disponível: R$ {limite.valor_limite - soma_item}'
+                    )
+            except LimiteAnual.DoesNotExist:
+                raise ValueError(
+                    f'Não há limite anual cadastrado para o ano {ano_aquisicao}'
+                )
+
+            # Validação 4: Saldo do recurso
+            if self.id_recurso_id:
+                soma_recurso = Aquisicao.objects.filter(
+                    id_recurso=self.id_recurso,
+                    preco__isnull=False,
+                    quantidade_adquirida__isnull=False
+                ).exclude(pk=self.pk).aggregate(
+                    total=Sum(F('preco') * F('quantidade_adquirida'))
+                )['total'] or 0
+
+                try:
+                    emenda = self.id_recurso.emenda
+                    saldo_total = emenda.valor
+                except Exception:
+                    saldo_total = Regular.objects.filter(
+                        id_recurso=self.id_recurso
+                    ).aggregate(total=Sum('valor'))['total'] or 0
+
+                if soma_recurso + valor_atual > saldo_total:
+                    raise ValueError(
+                        f'Saldo insuficiente no recurso indicado. '
+                        f'Saldo disponível: R$ {saldo_total - soma_recurso}'
+                    )
+
+        # Log de auditoria para id_recurso e id_fornecedor
+        if self.pk:
+            old = Aquisicao.objects.get(pk=self.pk)
+            if old.id_recurso_id != self.id_recurso_id:
+                LogAquisicao.objects.create(
+                    id_aquisicao=self,
+                    campo_alterado='id_recurso',
+                    valor_anterior=str(old.id_recurso_id),
+                    valor_novo=str(self.id_recurso_id)
+                )
+            if old.id_fornecedor_id != self.id_fornecedor_id:
+                LogAquisicao.objects.create(
+                    id_aquisicao=self,
+                    campo_alterado='id_fornecedor',
+                    valor_anterior=str(old.id_fornecedor_id),
+                    valor_novo=str(self.id_fornecedor_id)
+                )
+
+        if self.sei_dodf:
+            self.sei_dodf = self.sei_dodf.strip()
+
+        super().save(*args, **kwargs)
+
+
+class LogAquisicao(models.Model):
+    id_log = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Log"
+    )
+    id_aquisicao = models.ForeignKey(
+        'Aquisicao',
+        on_delete=models.PROTECT,
+        db_column='id_aquisicao',
+        verbose_name="Aquisição"
+    )
+    campo_alterado = models.CharField(
+        max_length=30,
+        verbose_name="Campo Alterado"
+    )
+    valor_anterior = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Valor Anterior"
+    )
+    valor_novo = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Valor Novo"
+    )
+    id_servidor = models.ForeignKey(
+        'Servidor',
+        on_delete=models.PROTECT,
+        db_column='id_servidor',
+        blank=True,
+        null=True,
+        verbose_name="Servidor"
+    )
+    data_alteracao = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data da Alteração"
+    )
+
+    class Meta:
+        db_table = 'log_aquisicao'
+        verbose_name = 'Log de Aquisição'
+        verbose_name_plural = 'Logs de Aquisição'
+        ordering = ['-data_alteracao']
+
+    def __str__(self):
+        return f"Log {self.id_log} - Aquisição {self.id_aquisicao} - {self.campo_alterado}"
+

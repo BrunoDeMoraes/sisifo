@@ -23,7 +23,11 @@ class Migration(migrations.Migration):
                         THEN RAISE(ABORT, 'Emendas só podem ser vinculadas a contas do tipo Emenda')
                     END;
                 END;
-
+            """,
+            reverse_sql="DROP TRIGGER IF EXISTS valida_tipo_emenda_insert;"
+        ),
+        migrations.RunSQL(
+            sql="""
                 CREATE TRIGGER valida_tipo_emenda_update
                 BEFORE UPDATE ON emenda
                 BEGIN
@@ -36,7 +40,11 @@ class Migration(migrations.Migration):
                         THEN RAISE(ABORT, 'Emendas só podem ser vinculadas a contas do tipo Emenda')
                     END;
                 END;
-
+            """,
+            reverse_sql="DROP TRIGGER IF EXISTS valida_tipo_emenda_update;"
+        ),
+        migrations.RunSQL(
+            sql="""
                 CREATE TRIGGER valida_tipo_regular_insert
                 BEFORE INSERT ON regular
                 BEGIN
@@ -49,7 +57,11 @@ class Migration(migrations.Migration):
                         THEN RAISE(ABORT, 'Recursos regulares só podem ser vinculados a contas do tipo Regular')
                     END;
                 END;
-
+            """,
+            reverse_sql="DROP TRIGGER IF EXISTS valida_tipo_regular_insert;"
+        ),
+        migrations.RunSQL(
+            sql="""
                 CREATE TRIGGER valida_tipo_regular_update
                 BEFORE UPDATE ON regular
                 BEGIN
@@ -62,7 +74,11 @@ class Migration(migrations.Migration):
                         THEN RAISE(ABORT, 'Recursos regulares só podem ser vinculados a contas do tipo Regular')
                     END;
                 END;
-
+            """,
+            reverse_sql="DROP TRIGGER IF EXISTS valida_tipo_regular_update;"
+        ),
+        migrations.RunSQL(
+            sql="""
                 CREATE TRIGGER valida_unique_regular_insert
                 BEFORE INSERT ON recurso
                 WHEN (SELECT recurso FROM conta WHERE id_conta = NEW.id_conta) = 'RG'
@@ -77,7 +93,11 @@ class Migration(migrations.Migration):
                         THEN RAISE(ABORT, 'Já existe um recurso regular para esta conta neste exercício')
                     END;
                 END;
-
+            """,
+            reverse_sql="DROP TRIGGER IF EXISTS valida_unique_regular_insert;"
+        ),
+        migrations.RunSQL(
+            sql="""
                 CREATE TRIGGER valida_unique_regular_update
                 BEFORE UPDATE ON recurso
                 WHEN (SELECT recurso FROM conta WHERE id_conta = NEW.id_conta) = 'RG'
@@ -93,14 +113,7 @@ class Migration(migrations.Migration):
                     END;
                 END;
             """,
-            reverse_sql="""
-                DROP TRIGGER IF EXISTS valida_tipo_emenda_insert;
-                DROP TRIGGER IF EXISTS valida_tipo_emenda_update;
-                DROP TRIGGER IF EXISTS valida_tipo_regular_insert;
-                DROP TRIGGER IF EXISTS valida_tipo_regular_update;
-                DROP TRIGGER IF EXISTS valida_unique_regular_insert;
-                DROP TRIGGER IF EXISTS valida_unique_regular_update;
-            """
+            reverse_sql="DROP TRIGGER IF EXISTS valida_unique_regular_update;"
         ),
     ]
 
