@@ -1342,3 +1342,162 @@ class LogAquisicao(models.Model):
     def __str__(self):
         return f"Log {self.id_log} - Aquisição {self.id_aquisicao} - {self.campo_alterado}"
 
+
+class NotaFiscal(models.Model):
+    id_nota_fiscal = models.AutoField(
+        primary_key=True,
+        verbose_name="ID da Nota Fiscal"
+    )
+    id_fornecedor = models.ForeignKey(
+        'Fornecedor',
+        on_delete=models.PROTECT,
+        db_column='id_fornecedor',
+        verbose_name="Fornecedor"
+    )
+    numero_nf = models.CharField(
+        max_length=10,
+        verbose_name="Número da Nota Fiscal"
+    )
+    data_emissao = models.DateField(
+        verbose_name="Data de Emissão"
+    )
+    total_nf = models.DecimalField(
+        max_digits=15,
+        decimal_places=4,
+        verbose_name="Total da Nota Fiscal"
+    )
+    data_recebimento = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data de Recebimento"
+    )
+    data_atesto = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data de Atesto"
+    )
+    reinf = models.BooleanField(
+        default=False,
+        verbose_name="REINF"
+    )
+    optante_simples = models.BooleanField(
+        blank=True,
+        null=True,
+        verbose_name="Optante do Simples Nacional"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'nota_fiscal'
+        verbose_name = 'Nota Fiscal'
+        verbose_name_plural = 'Notas Fiscais'
+        ordering = ['-data_emissao']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['id_fornecedor', 'numero_nf'],
+                name='unique_nf_por_fornecedor'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['id_fornecedor']),
+        ]
+
+    def __str__(self):
+        return f"NF {self.numero_nf} - {self.id_fornecedor}"
+
+    def save(self, *args, **kwargs):
+        self.numero_nf = self.numero_nf.strip().upper()
+        super().save(*args, **kwargs)
+
+
+class Pagamento(models.Model):
+    id_pagamento = models.AutoField(
+        primary_key=True,
+        verbose_name="ID do Pagamento"
+    )
+    id_aquisicao = models.ForeignKey(
+        'Aquisicao',
+        on_delete=models.PROTECT,
+        db_column='id_aquisicao',
+        verbose_name="Aquisição"
+    )
+    id_nota_fiscal = models.ForeignKey(
+        'NotaFiscal',
+        on_delete=models.PROTECT,
+        db_column='id_nota_fiscal',
+        verbose_name="Nota Fiscal"
+    )
+    quantidade_paga = models.IntegerField(
+        verbose_name="Quantidade Paga"
+    )
+    numero_pagamento = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        verbose_name="Número do Pagamento"
+    )
+    data_pagamento = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data do Pagamento"
+    )
+    registro_sei = models.BooleanField(
+        default=False,
+        verbose_name="Registro SEI"
+    )
+    data_cadastro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Data de Cadastro"
+    )
+    data_atualizacao = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Atualização"
+    )
+
+    class Meta:
+        db_table = 'pagamento'
+        verbose_name = 'Pagamento'
+        verbose_name_plural = 'Pagamentos'
+        ordering = ['-data_pagamento']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['id_aquisicao', 'id_nota_fiscal'],
+                name='unique_pagamento_por_aquisicao_nf'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['id_aquisicao']),
+            models.Index(fields=['id_nota_fiscal']),
+        ]
+
+    def __str__(self):
+        return f"Pagamento {self.id_pagamento} - Aquisição {self.id_aquisicao}"
+
+    def save(self, *args, **kwargs):
+        # Validação: quantidade_paga não pode superar quantidade_adquirida
+        if self.id_aquisicao.quantidade_adquirida:
+            quantidade_ja_paga = Pagamento.objects.filter(
+                id_aquisicao=self.id_aquisicao
+            ).exclude(pk=self.pk).aggregate(
+                total=models.Sum('quantidade_paga')
+            )['total'] or 0
+
+            if quantidade_ja_paga + self.quantidade_paga > self.id_aquisicao.quantidade_adquirida:
+                raise ValueError(
+                    f'Quantidade paga total ({quantidade_ja_paga + self.quantidade_paga}) '
+                    f'não pode superar a quantidade adquirida '
+                    f'({self.id_aquisicao.quantidade_adquirida})'
+                )
+
+        if self.numero_pagamento:
+            self.numero_pagamento = self.numero_pagamento.strip().upper()
+
+        super().save(*args, **kwargs)
+

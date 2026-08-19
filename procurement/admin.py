@@ -17,6 +17,9 @@ from .models import Area
 from .models import ContatoArea
 from .models import Banco
 from .models import ContaFornecedor
+from .models import LimiteAnual
+from .models import Aquisicao
+from .models import LogAquisicao
 
 
 
@@ -38,3 +41,6 @@ admin.site.register(Area)
 admin.site.register(ContatoArea)
 admin.site.register(Banco)
 admin.site.register(ContaFornecedor)
+admin.site.register(LimiteAnual)
+admin.site.register(Aquisicao)
+admin.site.register(LogAquisicao)
