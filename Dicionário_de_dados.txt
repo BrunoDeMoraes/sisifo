@@ -1,184 +1,804 @@
-O objetivo geral deste banco de dados é registrar e controlar os elementos que compõe um processo de aquisição.
+Dicionário de Dados Completo
+
+Tabela: servidor
+Descrição
+Tabela que registra informações dos servidores públicos envolvidos nos processos de aquisição. A matrícula funcional é utilizada como chave primária natural, garantindo unicidade e rastreabilidade. A tabela implementa soft delete através do campo ativo, preservando o histórico de participação dos servidores mesmo após desativação. Campos de auditoria (data_cadastro e data_atualizacao) foram incluídos para rastreamento temporal das operações.
+Campos
+id_servidor: Chave primária natural, texto com validação para aceitar apenas valores numéricos (matrícula funcional). Comprimento máximo de 20 caracteres. Aplicação automática de .strip() na gravação para remover espaços em branco.
 
 
-Servidor
-
-    Descrição
-        Tabela que registra informações dos servidores envolvidos nos processos de aquisição. A matrícula funcional
-        é utilizada como chave primária natural, garantindo unicidade e rastreabilidade. A tabela implementa soft delete
-        através do campo ativo, preservando o histórico de participação dos servidores mesmo após desativação.
-        Campos de auditoria (data_cadastro e data_atualizacao) foram incluídos para rastreamento temporal das operações.
-
-    Campos
-        id_servidor: Chave primária natural, texto com validação para aceitar apenas valores numéricos (matrícula funcional).
-         Comprimento máximo de 20 caracteres. Aplicação automática de .strip() na gravação para remover espaços em branco.
-
-        nome: Texto, not null, not blank. Comprimento máximo de 30 caracteres e mínimo de 3 caracteres. Aplicação automática de
-        .strip() e formatação em title case na gravação para padronização.
+nome: Texto, not null, not blank. Comprimento máximo de 30 caracteres e mínimo de 3 caracteres. Aplicação automática de .strip() e formatação em title case na gravação para padronização.
 
 
-        email: Texto (e-mail), opcional (blank=True, null=True). Comprimento máximo de 100 caracteres. Validação automática de
-        formato de e-mail pelo Django. Aplicação automática de .strip() e conversão para lowercase na gravação.
+email: Texto (e-mail), opcional (blank=True, null=True). Comprimento máximo de 100 caracteres. Validação automática de formato de e-mail pelo Django. Aplicação automática de .strip() e conversão para lowercase na gravação.
 
 
-        ativo: Booleano, not null, valor padrão True. Implementa soft delete, permitindo desativar servidores sem perder o
-        histórico de suas participações em processos de aquisição.
+ativo: Booleano, not null, valor padrão True. Implementa soft delete, permitindo desativar servidores sem perder o histórico de suas participações em processos de aquisição.
 
 
-        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
-        Utilizado para auditoria e rastreamento temporal.
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
 
 
-        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
-        Utilizado para auditoria e controle de alterações.
-
-Processo
-
-    Descrição
-        Tabela que registra os processos de aquisição recebidos no setor. A chave primária é gerada
-        automaticamente pelo banco de dados. O número SEI é utilizado como identificador único do processo
-        junto ao sistema eletrônico de informações, aceitando apenas valores numéricos apesar de armazenado
-        como texto. A categoria econômica é restrita às opções Custeio e Investimento, armazenadas de forma
-        abreviada no banco. Cada processo é obrigatoriamente vinculado a um servidor responsável, sendo impedida
-        a exclusão de servidores com processos associados. Campos de auditoria foram incluídos para rastreamento
-        temporal das operações.
-
-    Campos
-        id_processo: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField).
-        Não requer preenchimento manual.
-
-        numero_sei: Texto, not null, unique. Comprimento máximo de 30 caracteres. Aceita apenas valores
-        numéricos, validado via RegexValidator(r'^\d+$'). Aplicação automática de .strip() na gravação
-        para remover espaços em branco.
-
-        categoria: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções CS (Custeio)
-        e IN (Investimento) via TextChoices. O banco armazena a abreviação e a aplicação exibe o texto completo.
-
-        data_recebimento: Data, not null. Registra a data de recebimento do processo no setor.
-
-        id_servidor: Chave estrangeira, not null, referencia a tabela servidor pelo campo id_servidor.
-        Utiliza on_delete=PROTECT, impedindo a exclusão de servidores que possuam processos vinculados.
-
-        observacao: Texto longo (TextField), opcional (blank=True, null=True). Destinado ao registro de
-        informações adicionais pertinentes ao processo. Aplicação automática de .strip() na gravação quando preenchido.
-
-        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
-         Utilizado para auditoria e rastreamento temporal.
-
-        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
-        Utilizado para auditoria e controle de alterações.
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
 
 
-Origem
+Características Técnicas
+Ordenação padrão: Por nome (ordem alfabética)
+Índices: Nenhum (tabela de pequeno porte)
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado
 
-    Descrição
-        Tabela de domínio que registra as unidades organizacionais de origem para termos de referência.
-        Por ser uma tabela relativamente estática e de pequeno porte, sua estrutura é simples, contendo
-        apenas o identificador automático e o nome da unidade. A unicidade do campo unidade garante que
-        não haja duplicidade de registros. Campos de auditoria foram incluídos para manter consistência
-        com o padrão estabelecido no projeto
-
-    Campos
-        id_origem: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não
-        requer preenchimento manual.
-
-        unidade: Texto, not null, not blank, unique. Comprimento máximo de 15 caracteres. Identifica o
-        nome da unidade organizacional de origem. Aplicação automática de .strip() e conversão para maiúsculas
-        (.upper()) na gravação para padronização institucional.
-
-        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
-        Utilizado para auditoria e rastreamento temporal.
-        
-        ata_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
-        Utilizado para auditoria e controle de alterações.
-
-setor
-
-    Descrição
-        Tabela de domínio que registra os setores específicos vinculados a uma unidade de origem, permitindo identificar
-        com precisão a área organizacional responsável pela geração de um termo de referência. Cada setor pertence
-        obrigatoriamente a uma origem, sendo impedida a exclusão de origens que possuam setores vinculados. A combinação
-        entre origem e setor é única, evitando duplicidade de setores dentro de uma mesma unidade organizacional.
-        Campos de auditoria foram incluídos para manter consistência com o padrão estabelecido no projeto.
-
-    Campos
-        id_setor: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
-
-        id_origem: Chave estrangeira, not null, referencia a tabela origem pelo campo id_origem. Utiliza on_delete=PROTECT,
-        impedindo a exclusão de origens que possuam setores vinculados.
-
-        nome_setor: Texto, not null, not blank. Comprimento máximo de 20 caracteres. Identifica o nome do setor dentro da unidade
-        de origem. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação para padronização institucional.
-
-        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
-        Utilizado para auditoria e rastreamento temporal.
-
-        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
-        Utilizado para auditoria e controle de alterações.
+Tabela: processo
+Descrição
+Tabela que registra os processos de aquisição recebidos no setor. A chave primária é gerada automaticamente pelo banco de dados. O número SEI é utilizado como identificador único do processo junto ao sistema eletrônico de informações, aceitando apenas valores numéricos apesar de armazenado como texto. A categoria econômica é restrita às opções Custeio e Investimento, armazenadas de forma abreviada no banco. Cada processo é obrigatoriamente vinculado a um servidor responsável, sendo impedida a exclusão de servidores com processos associados. Campos de auditoria foram incluídos para rastreamento temporal das operações.
+Campos
+id_processo: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
 
 
-
-Termo
-
-    Descrição
-        Tabela que registra os termos de referência que dão origem às aquisições. Cada termo é obrigatoriamente vinculado
-        a um processo e a um setor, sendo impedida a exclusão de processos e setores com termos associados. Um processo pode
-        possuir múltiplos termos, contudo apenas um termo pode estar ativo por processo simultaneamente. Ao ativar um novo termo,
-        os demais termos do mesmo processo são automaticamente inativados, regra garantida tanto pelo método save() para operações
-        via ORM quanto por triggers no banco de dados para operações diretas via SQL. O ano é preenchido automaticamente com o ano
-        corrente no momento do cadastro. Campos de auditoria foram incluídos para rastreamento temporal das operações.
-
-    Campos
-        id_termo: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
-        
-        id_processo: Chave estrangeira, not null, referencia a tabela processo pelo campo id_processo. Utiliza on_delete=PROTECT,
-        impedindo a exclusão de processos que possuam termos vinculados.
-        
-        id_setor: Chave estrangeira, not null, referencia a tabela setor pelo campo id_setor. Utiliza on_delete=PROTECT, impedindo
-        a exclusão de setores que possuam termos vinculados.
-
-        rotulo: Texto, not null, not blank. Comprimento máximo de 6 caracteres. Aceita qualquer caractere. Aplicação automática de
-        .strip() na gravação para remover espaços em branco. Compõe a constraint de unicidade junto com id_setor e ano.
-
-        ano: Inteiro, not null. Preenchido automaticamente com o ano corrente via função ano_atual() definida como valor padrão.
-        Compõe a constraint de unicidade junto com id_setor e rotulo.
-
-        status: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções AT (Ativo) e IN (Inativo) via TextChoices.
-        Valor padrão AT (Ativo). Apenas um termo pode estar ativo por processo simultaneamente.
-        
-        data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True).
-        Utilizado para auditoria e rastreamento temporal.
-        
-        data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True).
-        Utilizado para auditoria e controle de alterações.
+numero_sei: Texto, not null, unique. Comprimento máximo de 30 caracteres. Aceita apenas valores numéricos, validado via RegexValidator(r'^\d+$'). Aplicação automática de .strip() na gravação para remover espaços em branco.
 
 
-  
-Cotacao
-
-    Descrição
-        Terá como função ativar um ternmo de referência e vincular a um servidor.
-        Dará origem às aquisições, que será a combinação entre uma cotação e um ou mais itens.
+categoria: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções CS (Custeio) e IN (Investimento) via TextChoices. O banco armazena a abreviação e a aplicação exibe o texto completo.
 
 
-    Campos
-        id_cotacao: chave primária auto gerada;
-        termo: chave estrangeira referente a tabela Termo;
-        servidor: chave estrangeira referente a tabela servidor
+data_recebimento: Data, not null. Registra a data de recebimento do processo no setor.
 
 
-Item    
-
-    Descrição
-        Essa tabela tem a função de intermediário entre cotação e os produtos e serviços que serão
-        cada instãncia de aquisição. A chave primaria deverá ser subrogada para evitar duplicação de
-        dados em outras tabelas do banco de dados onde será utilizada como chave estrangeira.
+id_servidor: Chave estrangeira, not null, referencia a tabela servidor pelo campo id_servidor. Utiliza on_delete=PROTECT, impedindo a exclusão de servidores que possuam processos vinculados.
 
 
-Conta
+observacao: Texto longo (TextField), opcional (blank=True, null=True). Destinado ao registro de informações adicionais pertinentes ao processo. Aplicação automática de .strip() na gravação quando preenchido.
 
-    Descrição
-        Tabela responsável por armazenar as informações de contas bancárias da Regional. Além de idenficar
-        a conta por número e CNPJ. o campo função identificará se trata-se uma conta de pagamento ou meramente
-        de transferência. Sua categoria economia (Investimento ou Custeio) e se é uma conta que recebe recursos
-        regulares ou emendas como fonte.
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por data de recebimento decrescente (-data_recebimento)
+Índices: numero_sei, data_recebimento, id_servidor, categoria
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado nos campos numero_sei e observacao
+Integridade referencial: PROTECT na chave estrangeira id_servidor impede exclusão de servidores com processos vinculados
+
+Tabela: origem
+Descrição
+Tabela de domínio que registra as unidades organizacionais de origem para termos de referência. Por ser uma tabela relativamente estática e de pequeno porte, sua estrutura é simples, contendo apenas o identificador automático e o nome da unidade. A unicidade do campo unidade garante que não haja duplicidade de registros. Campos de auditoria foram incluídos para manter consistência com o padrão estabelecido no projeto.
+Campos
+id_origem: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+unidade: Texto, not null, not blank, unique. Comprimento máximo de 15 caracteres. Identifica o nome da unidade organizacional de origem. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação para padronização institucional.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por unidade (ordem alfabética)
+Índices: Nenhum adicional. O campo unidade possui índice implícito gerado pela constraint unique
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado no campo unidade
+
+Tabela: setor
+Descrição
+Tabela de domínio que registra os setores específicos vinculados a uma unidade de origem, permitindo identificar com precisão a área organizacional responsável pela geração de um termo de referência. Cada setor pertence obrigatoriamente a uma origem, sendo impedida a exclusão de origens que possuam setores vinculados. A combinação entre origem e setor é única, evitando duplicidade de setores dentro de uma mesma unidade organizacional. Campos de auditoria foram incluídos para manter consistência com o padrão estabelecido no projeto.
+Campos
+id_setor: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_origem: Chave estrangeira, not null, referencia a tabela origem pelo campo id_origem. Utiliza on_delete=PROTECT, impedindo a exclusão de origens que possuam setores vinculados.
+
+
+nome_setor: Texto, not null, not blank. Comprimento máximo de 20 caracteres. Identifica o nome do setor dentro da unidade de origem. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação para padronização institucional.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por origem e nome do setor (ordem alfabética)
+Índices: Nenhum adicional. A constraint unique_together gera implicitamente um índice composto sobre os campos id_origem e nome_setor
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado no campo nome_setor
+Integridade referencial: PROTECT na chave estrangeira id_origem impede exclusão de origens com setores vinculados
+Restrição de unicidade: Constraint unique_setor_por_origem impede duplicidade de nomes de setores dentro de uma mesma origem
+
+Tabela: termo
+Descrição
+Tabela que registra os termos de referência que dão origem às aquisições. Cada termo é obrigatoriamente vinculado a um processo e a um setor, sendo impedida a exclusão de processos e setores com termos associados. Um processo pode possuir múltiplos termos, contudo apenas um termo pode estar ativo por processo simultaneamente. Ao ativar um novo termo, os demais termos do mesmo processo são automaticamente inativados, regra garantida tanto pelo método save() para operações via ORM quanto por triggers no banco de dados para operações diretas via SQL. O ano é preenchido automaticamente com o ano corrente no momento do cadastro. Campos de auditoria foram incluídos para rastreamento temporal das operações.
+Campos
+id_termo: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_processo: Chave estrangeira, not null, referencia a tabela processo pelo campo id_processo. Utiliza on_delete=PROTECT, impedindo a exclusão de processos que possuam termos vinculados.
+
+
+id_setor: Chave estrangeira, not null, referencia a tabela setor pelo campo id_setor. Utiliza on_delete=PROTECT, impedindo a exclusão de setores que possuam termos vinculados.
+
+
+rotulo: Texto, not null, not blank. Comprimento máximo de 6 caracteres. Aceita qualquer caractere. Aplicação automática de .strip() na gravação para remover espaços em branco. Compõe a constraint de unicidade junto com id_setor e ano.
+
+
+ano: Inteiro, not null. Preenchido automaticamente com o ano corrente via função ano_atual() definida como valor padrão. Compõe a constraint de unicidade junto com id_setor e rotulo.
+
+
+status: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções AT (Ativo) e IN (Inativo) via TextChoices. Valor padrão AT (Ativo). Apenas um termo pode estar ativo por processo simultaneamente.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por ano decrescente e rótulo alfabético (-ano, rotulo)
+Índices: id_processo, status, ano
+Triggers:
+unique_termo_ativo_por_processo_insert: Inativa automaticamente os demais termos do mesmo processo ao inserir um novo termo com status Ativo
+unique_termo_ativo_por_processo_update: Inativa automaticamente os demais termos do mesmo processo ao atualizar um termo para status Ativo
+Normalização de dados: Implementada via método save() personalizado no campo rotulo
+Regra de negócio: Apenas um termo pode estar ativo por processo simultaneamente, garantida por dupla proteção via método save() (operações ORM) e triggers (operações SQL diretas)
+Integridade referencial: PROTECT nas chaves estrangeiras id_processo e id_setor impede exclusão de processos e setores com termos vinculados
+Restrição de unicidade: Constraint unique_rotulo_por_setor_e_ano impede duplicidade de rótulos dentro de um mesmo setor no mesmo ano
+
+Tabela: item
+Descrição
+Tabela pai que registra de forma genérica os itens que podem ser objeto de uma aquisição. Os itens são classificados em dois tipos: Produto e Serviço. Cada tipo possui uma tabela filha especializada com campos específicos para sua caracterização. O campo codigo reflete códigos de banco de dados externo no caso de Produtos e códigos de padronização interna no caso de Serviços. A consistência entre o tipo do item e sua tabela filha é garantida por dupla proteção via método save() e triggers no banco de dados. Campos de auditoria foram incluídos para rastreamento temporal das operações.
+Campos
+id_item: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+codigo: Texto, not null, not blank, unique. Comprimento máximo de 15 caracteres. Reflete códigos externos para Produtos e códigos internos para Serviços. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação.
+
+
+descricao: Texto longo (TextField), not null, not blank. Tamanho indefinido. Contém a descrição exata do Produto ou a descrição genérica do Serviço. Aplicação automática de .strip() na gravação.
+
+
+tipo: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções PR (Produto) e SV (Serviço) via TextChoices. Determina qual tabela filha deve ser utilizada para especialização do item.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por código (ordem alfabética)
+Índices: Nenhum adicional. O campo codigo possui índice implícito gerado pela constraint unique
+Triggers: valida_tipo_produto_insert, valida_tipo_produto_update, valida_tipo_servico_insert, valida_tipo_servico_update
+Normalização de dados: Implementada via método save() personalizado nos campos codigo e descricao
+Herança: Tabela pai das tabelas produto e servico
+
+Tabela: produto
+Descrição
+Tabela filha especializada que herda de item via Multi-table Inheritance do Django. Registra informações específicas de itens do tipo Produto. A relação com a tabela pai é OneToOne, garantindo que cada Produto corresponda a exatamente um Item. Apenas itens do tipo PR podem ser vinculados a esta tabela, regra garantida por dupla proteção via método save() e triggers no banco de dados.
+Campos
+item_ptr: Chave primária e chave estrangeira simultânea (OneToOneField), not null, referencia a tabela item pelo campo id_item. Gerada automaticamente pelo Django via Multi-table Inheritance.
+
+
+apresentacao: Texto, not null, not blank. Comprimento máximo de 20 caracteres. Identifica o tipo de unidade de estoque do produto (ex: Caixa com 50 unidades). Aplicação automática de .strip() na gravação.
+
+
+observacao: Texto longo (TextField), opcional (blank=True, null=True). Destinado ao registro de informações adicionais pertinentes ao produto. Aplicação automática de .strip() na gravação quando preenchido.
+
+
+data_cadastro: Herdado da tabela item via Multi-table Inheritance. Não requer preenchimento manual.
+
+
+data_atualizacao: Herdado da tabela item via Multi-table Inheritance. Não requer preenchimento manual.
+
+
+Características Técnicas
+Ordenação padrão: Por código do item pai (ordem alfabética)
+Índices: Nenhum adicional
+Triggers:
+valida_tipo_produto_insert: Impede inserção de Produto vinculado a Item do tipo SV
+valida_tipo_produto_update: Impede atualização de Produto para Item do tipo SV
+Normalização de dados: Implementada via método save() personalizado nos campos apresentacao e observacao
+Herança: Tabela filha de item via Multi-table Inheritance
+Integridade referencial: Apenas itens do tipo PR podem ser vinculados, garantido por dupla proteção via save() e triggers
+
+Tabela: servico
+Descrição
+Tabela filha especializada que referencia item via chave estrangeira explícita. Registra informações específicas de itens do tipo Serviço, identificando cada serviço pelo número de patrimônio do objeto do serviço genérico. Um mesmo Item do tipo Serviço pode possuir múltiplos registros de Serviço vinculados, cada um identificando um patrimônio específico. O limite de gastos anuais de um serviço genérico é calculado somando os valores de todos os serviços específicos vinculados ao mesmo código. Apenas itens do tipo SV podem ser vinculados a esta tabela, regra garantida por dupla proteção via método save() e triggers no banco de dados.
+Campos
+id_servico: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_item: Chave estrangeira, not null, referencia a tabela item pelo campo id_item. Utiliza on_delete=PROTECT, impedindo a exclusão de itens que possuam serviços vinculados.
+
+
+patrimonio: Texto, not null, not blank. Comprimento máximo de 15 caracteres. Aceita qualquer caractere. Identifica o número de patrimônio do objeto do serviço. Não é único isoladamente, pois o mesmo patrimônio pode aparecer em serviços de diferentes itens. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação.
+
+
+descricao_patrimonio: Texto longo (TextField), not null, not blank. Tamanho indefinido. Contém a descrição exata do item objeto do serviço genérico identificado pela chave estrangeira. Aplicação automática de .strip() na gravação.
+
+
+observacao: Texto longo (TextField), opcional (blank=True, null=True). Destinado ao registro de informações adicionais pertinentes ao serviço. Aplicação automática de .strip() na gravação quando preenchido.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por item e patrimônio (ordem alfabética)
+Índices: Nenhum adicional. A constraint unique_together gera implicitamente um índice composto sobre os campos id_item e patrimonio
+Triggers:
+valida_tipo_servico_insert: Impede inserção de Serviço vinculado a Item do tipo PR
+valida_tipo_servico_update: Impede atualização de Serviço para Item do tipo PR
+Normalização de dados: Implementada via método save() personalizado nos campos patrimonio, descricao_patrimonio e observacao
+Herança: Tabela filha de item via chave estrangeira explícita (OneToMany)
+Integridade referencial: PROTECT na chave estrangeira id_item impede exclusão de itens com serviços vinculados. Apenas itens do tipo SV podem ser vinculados, garantido por dupla proteção via save() e triggers
+Restrição de unicidade: Constraint unique_patrimonio_por_item impede duplicidade de patrimônios dentro de um mesmo item
+
+Tabela: conta
+Descrição
+Tabela que registra as contas bancárias da organização utilizadas para operações de pagamento e transferência relacionadas às aquisições. Cada conta é classificada por função, categoria econômica e tipo de recurso, permitindo distinguir contas destinadas a recursos regulares de contas destinadas a emendas parlamentares. A combinação de unidade, agência e número garante a unicidade de cada conta. Campos de auditoria foram incluídos para rastreamento temporal das operações.
+Campos
+id_conta: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+unidade: Texto, not null, not blank. Comprimento máximo de 15 caracteres. Identifica a unidade organizacional responsável pela conta. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação.
+
+
+agencia: Texto, not null, not blank. Comprimento máximo de 6 caracteres. Aceita qualquer caractere. Identifica a agência bancária. Aplicação automática de .strip() na gravação.
+
+
+numero: Texto, not null, not blank. Comprimento máximo de 10 caracteres. Aceita qualquer caractere. Identifica o número da conta bancária. Aplicação automática de .strip() na gravação.
+
+
+cnpj: Texto, not null, not blank. Comprimento máximo de 14 caracteres. Aceita apenas dígitos numéricos, validado via RegexValidator(r'^\d+$'). Não é único pois um mesmo CNPJ pode estar associado a múltiplas contas. Aplicação automática de .strip() na gravação.
+
+
+funcao: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções PG (Pagamento) e TR (Transferência) via TextChoices.
+
+
+categoria_economica: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções CS (Custeio) e IN (Investimento) via TextChoices.
+
+
+recurso: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às opções RG (Regular) e EM (Emenda) via TextChoices. Determina qual tipo de recurso a conta comporta, sendo utilizado para validação de consistência nas tabelas Emenda e Regular.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por unidade (ordem alfabética)
+Índices: Nenhum adicional. A constraint unique_conta gera implicitamente um índice composto sobre os campos unidade, agencia e numero
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado nos campos unidade, agencia, numero e cnpj
+Restrição de unicidade: Constraint unique_conta impede duplicidade de contas pela combinação de unidade, agencia e numero
+
+Tabela: recurso
+Descrição
+Tabela pai que registra os recursos financeiros disponíveis para utilização nas aquisições. Cada recurso é vinculado a uma conta bancária e identificado pelo exercício fiscal. É a tabela central da hierarquia de recursos, sendo herdada pela tabela Emenda via Multi-table Inheritance e referenciada pela tabela Regular via chave estrangeira explícita. Para contas do tipo Regular, é garantida a unicidade da combinação conta/exercício, impedindo duplicidade de recursos regulares para o mesmo exercício. Para contas do tipo Emenda, múltiplos recursos podem existir para o mesmo exercício, pois cada emenda possui seu próprio saldo individual. A exclusão de contas com recursos vinculados é impedida pela constraint PROTECT.
+Campos
+id_recurso: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_conta: Chave estrangeira, not null, referencia a tabela conta pelo campo id_conta. Utiliza on_delete=PROTECT, impedindo a exclusão de contas que possuam recursos vinculados. Utiliza related_name='recursos' para evitar conflito com o campo recurso da tabela conta.
+
+
+exercicio: Inteiro, not null. Preenchido automaticamente com o ano corrente via função ano_atual() definida como valor padrão. Permite edição manual para registros de exercícios anteriores.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por exercício decrescente e conta
+Índices: Nenhum adicional
+Triggers:
+valida_unique_regular_insert: Impede inserção de segundo recurso regular para a mesma conta no mesmo exercício
+valida_unique_regular_update: Impede atualização que resulte em duplicidade de recurso regular para a mesma conta no mesmo exercício
+Normalização de dados: Implementada via método save() personalizado com validação condicional de unicidade para recursos regulares
+Herança: Tabela pai da tabela emenda via Multi-table Inheritance
+Regra de negócio: Unicidade condicional por conta/exercício aplicada apenas a recursos de contas do tipo Regular, garantida por dupla proteção via save() e triggers
+
+Tabela: emenda
+Descrição
+Tabela filha especializada que herda de recurso via Multi-table Inheritance do Django. Registra informações específicas de recursos provenientes de emendas parlamentares. Cada emenda possui controle individual de saldo, calculado dinamicamente pela diferença entre o valor da emenda e a soma dos valores das aquisições vinculadas ao seu recurso. Apenas recursos vinculados a contas do tipo Emenda (EM) podem ser registrados nesta tabela, regra garantida por dupla proteção via método save() e triggers no banco de dados.
+Campos
+recurso_ptr: Chave primária e chave estrangeira simultânea (OneToOneField), not null, referencia a tabela recurso pelo campo id_recurso. Gerada automaticamente pelo Django via Multi-table Inheritance.
+
+
+oficio: Texto, not null, not blank. Comprimento máximo de 10 caracteres. Identifica o número do ofício de recebimento da emenda. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação.
+
+
+numero: Texto, not null, not blank. Comprimento máximo de 12 caracteres. Identifica o número da emenda parlamentar. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação.
+
+
+valor: Numérico decimal, not null. Precisão de 11 dígitos com 2 casas decimais (max_digits=11, decimal_places=2). Comporta valores até 999 milhões. Representa o valor total da emenda.
+
+
+parlamentar: Texto, not null, not blank. Comprimento máximo de 30 caracteres. Identifica o parlamentar autor da emenda. Aplicação automática de .strip() e formatação em title case na gravação.
+
+
+destinacao: Texto longo (TextField), not null, not blank. Tamanho indefinido. Descreve a destinação prevista para os recursos da emenda. Aplicação automática de .strip() na gravação.
+
+
+data_recebimento: Data, not null. Registra a data de recebimento da emenda.
+
+
+extrato: Texto (CharField), opcional (blank=True, null=True). Comprimento máximo de 40 caracteres. Destinado ao registro do extrato da emenda. Aplicação automática de .strip() na gravação quando preenchido.
+
+
+sei: Texto, opcional (blank=True, null=True). Comprimento máximo de 30 caracteres. Aceita apenas dígitos numéricos, validado via RegexValidator(r'^\d+$'). Registra o número SEI relacionado à emenda. Aplicação automática de .strip() na gravação quando preenchido.
+
+
+observacao: Texto longo (TextField), opcional (blank=True, null=True). Destinado ao registro de informações adicionais pertinentes à emenda. Aplicação automática de .strip() na gravação quando preenchido.
+
+
+data_cadastro: Herdado da tabela recurso via Multi-table Inheritance. Não requer preenchimento manual.
+
+
+data_atualizacao: Herdado da tabela recurso via Multi-table Inheritance. Não requer preenchimento manual.
+
+
+Características Técnicas
+Ordenação padrão: Por exercício decrescente e parlamentar alfabético
+Índices: Nenhum adicional
+Triggers:
+valida_tipo_emenda_insert: Impede inserção de Emenda vinculada a conta do tipo RG
+valida_tipo_emenda_update: Impede atualização de Emenda para conta do tipo RG
+Normalização de dados: Implementada via método save() personalizado nos campos oficio, numero, parlamentar, destinacao, sei, extrato e observacao
+Herança: Tabela filha de recurso via Multi-table Inheritance
+Controle de saldo: Calculado dinamicamente pela diferença entre valor e a soma dos valores das aquisições vinculadas ao recurso
+Integridade referencial: Apenas recursos vinculados a contas do tipo EM podem ser registrados, garantido por dupla proteção via save() e triggers
+
+Tabela: regular
+Descrição
+Tabela filha especializada que referencia recurso via chave estrangeira explícita. Registra os aportes de recursos financeiros regulares recebidos pela organização. Diferentemente das emendas, os recursos regulares não possuem controle individual de saldo. O saldo disponível é calculado dinamicamente pela diferença entre a soma de todos os aportes regulares vinculados ao mesmo recurso e a soma dos valores das aquisições vinculadas ao mesmo recurso. Apenas recursos vinculados a contas do tipo Regular (RG) podem ser registrados nesta tabela, regra garantida por dupla proteção via método save() e triggers no banco de dados.
+Campos
+id_regular: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_recurso: Chave estrangeira, not null, referencia a tabela recurso pelo campo id_recurso. Utiliza on_delete=PROTECT, impedindo a exclusão de recursos que possuam aportes regulares vinculados.
+
+
+valor: Numérico decimal, not null. Precisão de 11 dígitos com 2 casas decimais (max_digits=11, decimal_places=2). Comporta valores até 999 milhões. Representa o valor do aporte regular recebido.
+
+
+data_recebimento: Data, not null. Registra a data de recebimento do aporte regular.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por data de recebimento decrescente
+Índices: Nenhum adicional. A constraint unique_regular gera implicitamente um índice composto sobre os campos id_recurso, valor e data_recebimento
+Triggers:
+valida_tipo_regular_insert: Impede inserção de aporte Regular vinculado a recurso de conta do tipo EM
+valida_tipo_regular_update: Impede atualização de aporte Regular para recurso de conta do tipo EM
+Normalização de dados: Nenhuma normalização de texto necessária
+Herança: Tabela filha de recurso via chave estrangeira explícita (OneToMany)
+Controle de saldo: Calculado dinamicamente pela diferença entre a soma de todos os aportes regulares do mesmo recurso e a soma dos valores das aquisições vinculadas ao mesmo recurso
+Integridade referencial: PROTECT na chave estrangeira id_recurso impede exclusão de recursos com aportes vinculados. Apenas recursos de contas do tipo RG podem ser vinculados, garantido por dupla proteção via save() e triggers
+Restrição de unicidade: Constraint unique_regular impede duplicidade de aportes pela combinação de id_recurso, valor e data_recebimento
+
+Tabela: fornecedor
+Descrição
+Tabela que registra os fornecedores participantes dos processos de aquisição. Cada fornecedor é identificado unicamente pelo seu CNPJ. Além da chave primária autogerada, o CNPJ é mantido como campo único para garantir que não haja duplicidade de fornecedores. O campo codigo_sis permite a integração com outro sistema externo, sendo opcional por conta de peculiaridades da regra de negócio. A unidade federativa é restrita às 27 siglas dos estados e Distrito Federal. Campos de auditoria foram incluídos para rastreamento temporal das operações.
+Campos
+id_fornecedor: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+cnpj_fornecedor: Texto, not null, not blank, unique. Comprimento máximo de 14 caracteres. Aceita apenas dígitos numéricos, validado via RegexValidator(r'^\d+$'). Aplicação automática de .strip() na gravação.
+
+
+razao_social: Texto (CharField), not null, not blank. Comprimento máximo de 100 caracteres. Razão social do fornecedor. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação.
+
+
+nome_fantasia: Texto (CharField), not null, not blank. Comprimento máximo de 40 caracteres. Nome fantasia do fornecedor. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação.
+
+
+codigo_sis: Texto, opcional (blank=True, null=True), unique. Comprimento máximo de 10 caracteres. Código de cadastro em sistema externo. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação quando preenchido.
+
+
+uf: Texto, not null. Comprimento máximo de 2 caracteres. Restrito às 27 siglas dos estados e Distrito Federal via TextChoices.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por razão social (ordem alfabética)
+Índices: Nenhum adicional. Os campos cnpj_fornecedor e codigo_sis possuem índices implícitos gerados pelas constraints unique
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado nos campos cnpj_fornecedor, razao_social, nome_fantasia e codigo_sis
+
+Tabela: contato
+Descrição
+Tabela que registra os contatos de cada fornecedor. Um fornecedor pode ter múltiplos contatos, cada um representando uma pessoa responsável por uma ou mais áreas de atuação específicas. A combinação de fornecedor e e-mail é única, permitindo que o mesmo e-mail seja cadastrado para fornecedores diferentes mas impedindo duplicidade dentro do mesmo fornecedor. Campos de auditoria foram incluídos para rastreamento temporal das operações.
+Campos
+id_contato: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+cnpj_fornecedor: Chave estrangeira, not null, referencia a tabela fornecedor pelo campo cnpj_fornecedor. Utiliza on_delete=PROTECT, impedindo a exclusão de fornecedores que possuam contatos vinculados.
+
+
+email: Texto (EmailField), not null, not blank. Validação automática de formato de e-mail pelo Django. Aplicação automática de .strip() e conversão para lowercase na gravação.
+
+
+contato: Texto (CharField), not null, not blank. Comprimento máximo de 40 caracteres. Nome da pessoa de contato. Aplicação automática de .strip() e formatação em title case na gravação.
+
+
+telefone: Texto (CharField), not null, not blank. Comprimento máximo de 11 caracteres. Aceita apenas dígitos numéricos, validado via RegexValidator(r'^\d+$'). Aplicação automática de .strip() na gravação.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por fornecedor e nome do contato (ordem alfabética)
+Índices: cnpj_fornecedor
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado nos campos email, contato e telefone
+Integridade referencial: PROTECT na chave estrangeira cnpj_fornecedor impede exclusão de fornecedores com contatos vinculados
+Restrição de unicidade: Constraint unique_email_por_fornecedor impede duplicidade de e-mails dentro do mesmo fornecedor
+
+Tabela: area
+Descrição
+Tabela de domínio que registra as áreas de atuação dos fornecedores. Cada área é identificada unicamente pelo campo atuacao. As áreas são vinculadas aos contatos dos fornecedores através da tabela associativa contato_area, permitindo que cada contato seja responsável por uma ou mais áreas de atuação específicas. Campos de auditoria foram incluídos para manter consistência com o padrão estabelecido no projeto.
+Campos
+id_area: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+atuacao: Texto (CharField), not null, not blank, unique. Comprimento máximo de 40 caracteres. Identifica a área de atuação do fornecedor. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por área de atuação (ordem alfabética)
+Índices: Nenhum adicional. O campo atuacao possui índice implícito gerado pela constraint unique
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado no campo atuacao
+
+Tabela: contato_area
+Descrição
+Tabela associativa que implementa a relação ManyToMany entre contato e area. Permite que um contato seja responsável por múltiplas áreas de atuação e que uma mesma área seja atendida por múltiplos contatos. A combinação de contato e área é única, impedindo duplicidade de vínculos. Campos de auditoria foram incluídos para manter consistência com o padrão estabelecido no projeto.
+Campos
+id_contato_area: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_contato: Chave estrangeira, not null, referencia a tabela contato pelo campo id_contato. Utiliza on_delete=PROTECT, impedindo a exclusão de contatos que possuam áreas vinculadas.
+
+
+id_area: Chave estrangeira, not null, referencia a tabela area pelo campo id_area. Utiliza on_delete=PROTECT, impedindo a exclusão de áreas que possuam contatos vinculados.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por contato e área (ordem alfabética)
+Índices: Nenhum adicional. A constraint unique_contato_area gera implicitamente um índice composto sobre os campos id_contato e id_area
+Triggers: Nenhum
+Normalização de dados: Nenhuma normalização necessária
+Integridade referencial: PROTECT nas chaves estrangeiras id_contato e id_area impede exclusão de contatos e áreas com vínculos ativos
+Restrição de unicidade: Constraint unique_contato_area impede duplicidade de vínculos entre contato e área
+
+Tabela: banco
+Descrição
+Tabela de domínio que registra os bancos utilizados nas operações de pagamento aos fornecedores. Cada banco é identificado unicamente pelo seu código COMPE, que é o código oficial de compensação bancária no Brasil composto por 3 dígitos. Campos de auditoria foram incluídos para manter consistência com o padrão estabelecido no projeto.
+Campos
+id_banco: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+codigo_compe: Texto, not null, not blank, unique. Comprimento máximo de 3 caracteres. Aceita apenas dígitos numéricos, validado via RegexValidator(r'^\d+$'). Código oficial de compensação bancária. Aplicação automática de .strip() na gravação.
+
+
+nome: Texto (CharField), not null, not blank. Comprimento máximo de 40 caracteres. Nome do banco. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por código COMPE
+Índices: Nenhum adicional. O campo codigo_compe possui índice implícito gerado pela constraint unique
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado nos campos codigo_compe e nome
+
+Tabela: conta_fornecedor
+Descrição
+Tabela que registra a conta bancária de pagamento de cada fornecedor. Cada fornecedor pode ter apenas uma conta de pagamento vinculada, garantido pela relação OneToOne com a tabela fornecedor. A tabela armazena os dados bancários completos incluindo agência, dígito da agência, conta e dígito da conta. Os campos de dígito são opcionais pois nem todas as contas e agências possuem dígito verificador. Campos de auditoria foram incluídos para rastreamento temporal das operações.
+Campos
+id_conta_fornecedor: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_fornecedor: Chave estrangeira OneToOne, not null, referencia a tabela fornecedor pelo campo id_fornecedor. Utiliza on_delete=PROTECT, impedindo a exclusão de fornecedores que possuam conta de pagamento vinculada. A relação OneToOne garante que cada fornecedor tenha no máximo uma conta de pagamento.
+
+
+id_banco: Chave estrangeira, not null, referencia a tabela banco pelo campo id_banco. Utiliza on_delete=PROTECT, impedindo a exclusão de bancos que possuam contas de fornecedores vinculadas.
+
+
+agencia: Texto (CharField), not null, not blank. Comprimento máximo de 6 caracteres. Aceita apenas dígitos numéricos, validado via RegexValidator(r'^\d+$'). Aplicação automática de .strip() na gravação.
+
+
+digito_agencia: Texto (CharField), opcional (blank=True, null=True). Comprimento máximo de 1 caractere. Aceita qualquer caractere alfanumérico. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação quando preenchido.
+
+
+conta: Texto (CharField), not null, not blank. Comprimento máximo de 10 caracteres. Aceita apenas dígitos numéricos, validado via RegexValidator(r'^\d+$'). Aplicação automática de .strip() na gravação.
+
+
+digito_conta: Texto (CharField), opcional (blank=True, null=True). Comprimento máximo de 1 caractere. Aceita qualquer caractere alfanumérico. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação quando preenchido.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por fornecedor
+Índices: Nenhum adicional. O campo id_fornecedor possui índice implícito gerado pela constraint OneToOne
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado nos campos agencia, digito_agencia, conta e digito_conta
+Integridade referencial: PROTECT nas chaves estrangeiras id_fornecedor e id_banco impede exclusão de fornecedores e bancos com contas vinculadas
+Regra de negócio: Cada fornecedor pode ter no máximo uma conta de pagamento, garantido pela relação OneToOneField
+
+Tabela: limite_anual
+Descrição
+Tabela de configuração que registra o limite anual de gastos por item estabelecido por lei. O limite é único por ano e se aplica individualmente a cada item, determinando o valor máximo que pode ser gasto com um mesmo item durante o exercício fiscal. Por ser um valor legal sujeito a atualização periódica, é mantido em tabela própria para facilitar sua atualização sem necessidade de alteração no código. Campos de auditoria foram incluídos para rastreamento temporal das operações.
+Campos
+id_limite: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+ano: Inteiro, not null, unique. Preenchido automaticamente com o ano corrente via função ano_atual() definida como valor padrão. Identifica o exercício fiscal ao qual o limite se aplica.
+
+
+valor_limite: Numérico decimal, not null. Precisão de 11 dígitos com 2 casas decimais (max_digits=11, decimal_places=2). Comporta valores até 999 milhões. Representa o valor máximo que pode ser gasto por item no exercício.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por ano decrescente
+Índices: Nenhum adicional. O campo ano possui índice implícito gerado pela constraint unique
+Triggers: Nenhum
+Normalização de dados: Nenhuma normalização necessária
+Regra de negócio: Valor único por ano, aplicado individualmente a cada item nas validações de criação de aquisições
+
+Tabela: aquisicao
+Descrição
+Tabela principal do sistema que registra as aquisições realizadas pela organização. Cada aquisição é obrigatoriamente vinculada a um termo de referência e a um item, sendo os demais campos de preenchimento opcional no momento da criação e preenchidos progressivamente durante o ciclo de vida da aquisição. O campo id_servico é mutuamente exclusivo com itens do tipo Produto, sendo obrigatório apenas para aquisições de itens do tipo Serviço. A quantidade adquirida não pode superar a quantidade solicitada. As validações financeiras de limite anual por item e saldo do recurso são realizadas automaticamente quando preco e quantidade_adquirida estão preenchidos. Alterações nos campos id_recurso e id_fornecedor são registradas automaticamente em log de auditoria. Campos de auditoria foram incluídos para rastreamento temporal das operações.
+Campos
+id_aquisicao: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_termo: Chave estrangeira, not null, referencia a tabela termo pelo campo id_termo. Utiliza on_delete=PROTECT, impedindo a exclusão de termos que possuam aquisições vinculadas.
+
+
+id_item: Chave estrangeira, not null, referencia a tabela item pelo campo id_item. Utiliza on_delete=PROTECT, impedindo a exclusão de itens que possuam aquisições vinculadas.
+
+
+id_servico: Chave estrangeira, opcional (blank=True, null=True), referencia a tabela servico pelo campo id_servico. Utiliza on_delete=PROTECT. Deve ser preenchido apenas quando id_item se referir a um item do tipo Serviço (SV). Não pode ser preenchido para itens do tipo Produto (PR). O serviço indicado deve pertencer ao item selecionado. Regra garantida por dupla proteção via save() e triggers.
+
+
+quantidade_solicitada: Inteiro, not null. Registra a quantidade máxima de unidades do item que pode ser adquirida na aquisição.
+
+
+preco: Numérico decimal, opcional (blank=True, null=True). Precisão de 15 dígitos com 4 casas decimais (max_digits=15, decimal_places=4). Registra o preço unitário do item adquirido.
+
+
+quantidade_adquirida: Inteiro, opcional (blank=True, null=True). Registra a quantidade de unidades efetivamente adquiridas. Não pode ser superior ao valor de quantidade_solicitada. Regra garantida por dupla proteção via save() e triggers.
+
+
+id_recurso: Chave estrangeira, opcional (blank=True, null=True), referencia a tabela recurso pelo campo id_recurso. Utiliza on_delete=PROTECT. Alterações neste campo são registradas automaticamente em log_aquisicao.
+
+
+id_fornecedor: Chave estrangeira, opcional (blank=True, null=True), referencia a tabela fornecedor pelo campo id_fornecedor. Utiliza on_delete=PROTECT. Alterações neste campo são registradas automaticamente em log_aquisicao.
+
+
+data_ordem: Data, opcional (blank=True, null=True). Registra a data de emissão da ordem de fornecimento.
+
+
+sei_dodf: Texto, opcional (blank=True, null=True). Comprimento máximo de 30 caracteres. Aceita apenas dígitos numéricos, validado via RegexValidator(r'^\d+$'). Registra o número SEI do Diário Oficial do Distrito Federal relacionado à aquisição. Aplicação automática de .strip() na gravação quando preenchido.
+
+
+data_publicacao: Data, opcional (blank=True, null=True). Registra a data de publicação no Diário Oficial.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por data de cadastro decrescente
+Índices: id_termo, id_item, id_fornecedor, id_recurso, data_ordem
+Triggers:
+valida_servico_aquisicao_insert: Impede inserção de aquisição com id_servico incompatível com o tipo do item
+valida_servico_aquisicao_update: Impede atualização de aquisição com id_servico incompatível com o tipo do item
+valida_quantidade_aquisicao_insert: Impede inserção de aquisição com quantidade_adquirida superior a quantidade_solicitada
+valida_quantidade_aquisicao_update: Impede atualização de aquisição com quantidade_adquirida superior a quantidade_solicitada
+Normalização de dados: Implementada via método save() personalizado no campo sei_dodf
+Regras de negócio:
+id_servico só pode ser preenchido para itens do tipo SV e deve pertencer ao item selecionado
+quantidade_adquirida não pode superar quantidade_solicitada
+Limite anual por item não pode ser ultrapassado (validado quando preco e quantidade_adquirida preenchidos)
+Saldo do recurso não pode ser ultrapassado (validado quando preco e quantidade_adquirida preenchidos)
+Log de auditoria: Alterações nos campos id_recurso e id_fornecedor são registradas automaticamente na tabela log_aquisicao
+Integridade referencial: PROTECT em todas as chaves estrangeiras impede exclusão de registros vinculados
+
+Tabela: log_aquisicao
+Descrição
+Tabela de auditoria que registra automaticamente todas as alterações nos campos id_recurso e id_fornecedor da tabela aquisicao. Cada registro de log identifica o campo alterado, os valores anterior e novo, o servidor responsável pela alteração e o momento em que ocorreu. O log é gerado automaticamente pelo método save() da tabela aquisicao, garantindo rastreabilidade completa das mudanças nesses campos críticos.
+Campos
+id_log: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_aquisicao: Chave estrangeira, not null, referencia a tabela aquisicao pelo campo id_aquisicao. Utiliza on_delete=PROTECT, impedindo a exclusão de aquisições que possuam logs vinculados.
+
+
+campo_alterado: Texto (CharField), not null, not blank. Comprimento máximo de 30 caracteres. Identifica o nome do campo que foi alterado (id_recurso ou id_fornecedor).
+
+
+valor_anterior: Texto longo (TextField), opcional (blank=True, null=True). Registra o valor anterior do campo alterado. Armazenado como texto para compatibilidade com diferentes tipos de dados.
+
+
+valor_novo: Texto longo (TextField), opcional (blank=True, null=True). Registra o novo valor do campo alterado. Armazenado como texto para compatibilidade com diferentes tipos de dados.
+
+
+id_servidor: Chave estrangeira, opcional (blank=True, null=True), referencia a tabela servidor pelo campo id_servidor. Utiliza on_delete=PROTECT. Identifica o servidor responsável pela alteração.
+
+
+data_alteracao: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Registra o momento exato da alteração.
+
+
+Características Técnicas
+Ordenação padrão: Por data de alteração decrescente
+Índices: Nenhum adicional
+Triggers: Nenhum
+Normalização de dados: Nenhuma normalização necessária
+Geração automática: Registros criados automaticamente pelo método save() da tabela aquisicao ao detectar alterações nos campos id_recurso e id_fornecedor
+Integridade referencial: PROTECT nas chaves estrangeiras id_aquisicao e id_servidor impede exclusão de aquisições e servidores com logs vinculados
+
+Tabela: nota_fiscal
+Descrição
+Tabela que registra as notas fiscais emitidas pelos fornecedores no contexto das aquisições. Uma nota fiscal pode estar associada a mais de um pagamento, pois é possível que o valor total de uma nota fiscal seja liquidado em parcelas através de múltiplos pagamentos. Cada nota fiscal é identificada unicamente pela combinação do fornecedor e número da nota, permitindo que fornecedores diferentes utilizem a mesma numeração sem conflito. Os campos data_recebimento, data_atesto e optante_simples são opcionais no momento da criação pois são preenchidos progressivamente durante o processo de liquidação. O campo optante_simples indica se o fornecedor é optante do Simples Nacional, informação relevante para fins tributários e de retenção de impostos, sendo preenchido apenas quando os pagamentos vinculados à nota forem processados. O campo reinf indica se a nota fiscal já foi declarada na EFD-REINF, obrigação acessória do sistema de escrituração fiscal digital das retenções.
+Campos
+id_nota_fiscal: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_fornecedor: Chave estrangeira, not null, referencia a tabela fornecedor pelo campo id_fornecedor. Utiliza on_delete=PROTECT, impedindo a exclusão de fornecedores que possuam notas fiscais vinculadas. Compõe a constraint de unicidade junto com numero_nf.
+
+
+numero_nf: Texto (CharField), not null, not blank. Comprimento máximo de 10 caracteres. Identifica o número da nota fiscal. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação. Compõe a constraint de unicidade junto com id_fornecedor.
+
+
+data_emissao: Data, not null. Registra a data de emissão da nota fiscal pelo fornecedor.
+
+
+total_nf: Numérico decimal, not null. Precisão de 15 dígitos com 4 casas decimais (max_digits=15, decimal_places=4). Registra o valor total da nota fiscal.
+
+
+data_recebimento: Data, opcional (blank=True, null=True). Registra a data de recebimento da nota fiscal pelo setor responsável.
+
+
+data_atesto: Data, opcional (blank=True, null=True). Registra a data de atesto da nota fiscal, confirmando que o produto ou serviço foi entregue conforme solicitado.
+
+
+reinf: Booleano, not null, valor padrão False. Indica se a nota fiscal já foi declarada na EFD-REINF. Atualizado manualmente quando a declaração é realizada.
+
+
+optante_simples: Booleano, opcional (blank=True, null=True). Indica se o fornecedor é optante do Simples Nacional no momento da emissão da nota. Admite três estados: True (optante), False (não optante) e None (não informado). Preenchido em momento posterior à criação da instância, quando os pagamentos vinculados à nota forem processados.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por data de emissão decrescente
+Índices: id_fornecedor
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado no campo numero_nf
+Integridade referencial: PROTECT na chave estrangeira id_fornecedor impede exclusão de fornecedores com notas fiscais vinculadas
+Restrição de unicidade: Constraint unique_nf_por_fornecedor impede duplicidade de notas fiscais pela combinação de id_fornecedor e numero_nf
+Regra de negócio: Uma nota fiscal pode estar vinculada a múltiplos pagamentos, permitindo a liquidação parcial do seu valor total em parcelas
+
+Tabela: pagamento
+Descrição
+Tabela que registra os pagamentos realizados no contexto das aquisições. Cada pagamento é vinculado a uma aquisição e a uma nota fiscal, sendo a combinação desses dois campos única para garantir que uma mesma nota fiscal não seja utilizada duas vezes para a mesma aquisição. Uma aquisição pode gerar múltiplos pagamentos, permitindo a liquidação parcial por meio de diferentes notas fiscais. A soma das quantidades pagas em todos os pagamentos de uma aquisição não pode superar a quantidade adquirida registrada na tabela aquisicao. Os campos numero_pagamento e data_pagamento são opcionais no momento da criação pois são preenchidos quando o pagamento é efetivamente processado pelo sistema financeiro. O campo registro_sei indica se o pagamento já foi registrado no SEI. O campo simples_nacional foi movido para a tabela nota_fiscal pois é uma característica do fornecedor no momento da emissão da nota, não do pagamento em si.
+Campos
+id_pagamento: Chave primária inteira gerada automaticamente pelo banco de dados (AutoField). Não requer preenchimento manual.
+
+
+id_aquisicao: Chave estrangeira, not null, referencia a tabela aquisicao pelo campo id_aquisicao. Utiliza on_delete=PROTECT, impedindo a exclusão de aquisições que possuam pagamentos vinculados. Compõe a constraint de unicidade junto com id_nota_fiscal.
+
+
+id_nota_fiscal: Chave estrangeira, not null, referencia a tabela nota_fiscal pelo campo id_nota_fiscal. Utiliza on_delete=PROTECT, impedindo a exclusão de notas fiscais que possuam pagamentos vinculados. Compõe a constraint de unicidade junto com id_aquisicao.
+
+
+quantidade_paga: Inteiro, not null. Registra a quantidade de unidades efetivamente pagas neste pagamento. A soma de todos os pagamentos de uma mesma aquisição não pode superar o valor de quantidade_adquirida da aquisição vinculada, validado automaticamente via método save().
+
+
+numero_pagamento: Texto (CharField), opcional (blank=True, null=True). Comprimento máximo de 10 caracteres. Identifica o número do pagamento no sistema financeiro. Aplicação automática de .strip() e conversão para maiúsculas (.upper()) na gravação quando preenchido.
+
+
+data_pagamento: Data, opcional (blank=True, null=True). Registra a data em que o pagamento foi efetivamente realizado.
+
+
+registro_sei: Booleano, not null, valor padrão False. Indica se o pagamento já foi registrado no SEI. Atualizado manualmente quando o registro é realizado.
+
+
+data_cadastro: Data e hora, not null, preenchimento automático no momento da criação do registro (auto_now_add=True). Utilizado para auditoria e rastreamento temporal.
+
+
+data_atualizacao: Data e hora, not null, atualização automática a cada modificação do registro (auto_now=True). Utilizado para auditoria e controle de alterações.
+
+
+Características Técnicas
+Ordenação padrão: Por data de pagamento decrescente
+Índices: id_aquisicao, id_nota_fiscal
+Triggers: Nenhum
+Normalização de dados: Implementada via método save() personalizado no campo numero_pagamento
+Integridade referencial: PROTECT nas chaves estrangeiras id_aquisicao e id_nota_fiscal impede exclusão de aquisições e notas fiscais com pagamentos vinculados
+Restrição de unicidade: Constraint unique_pagamento_por_aquisicao_nf impede que a mesma nota fiscal seja utilizada duas vezes para a mesma aquisição
+Regra de negócio: A soma de quantidade_paga de todos os pagamentos de uma mesma aquisição não pode superar quantidade_adquirida da aquisição vinculada, validado automaticamente via método save(). Uma nota fiscal pode estar vinculada a múltiplos pagamentos de aquisições diferentes, permitindo sua utilização para liquidar parcialmente o valor de cada aquisição
+
+
+Ordem de inserção de dados:
+
+1. Servidor
+2. Banco
+3. Fornecedor → Contato → Area → ContatoArea
+4. ContaFornecedor
+5. Conta → Recurso → Emenda / Regular
+6. Origem → Setor
+7. Item → Produto / Servico
+8. LimiteAnual
+9. Processo → Termo
+10. Aquisicao
+11. NotaFiscal → Pagamento

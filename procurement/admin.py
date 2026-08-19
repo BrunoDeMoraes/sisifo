@@ -20,6 +20,8 @@ from .models import ContaFornecedor
 from .models import LimiteAnual
 from .models import Aquisicao
 from .models import LogAquisicao
+from .models import NotaFiscal
+from .models import Pagamento
 
 
 
@@ -44,3 +46,5 @@ admin.site.register(ContaFornecedor)
 admin.site.register(LimiteAnual)
 admin.site.register(Aquisicao)
 admin.site.register(LogAquisicao)
+admin.site.register(NotaFiscal)
+admin.site.register(Pagamento)
