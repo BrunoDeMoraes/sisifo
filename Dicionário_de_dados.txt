@@ -4,7 +4,7 @@ Tabela: servidor
 Descrição
 Tabela que registra informações dos servidores públicos envolvidos nos processos de aquisição. A matrícula funcional é utilizada como chave primária natural, garantindo unicidade e rastreabilidade. A tabela implementa soft delete através do campo ativo, preservando o histórico de participação dos servidores mesmo após desativação. Campos de auditoria (data_cadastro e data_atualizacao) foram incluídos para rastreamento temporal das operações.
 Campos
-id_servidor: Chave primária natural, texto com validação para aceitar apenas valores numéricos (matrícula funcional). Comprimento máximo de 20 caracteres. Aplicação automática de .strip() na gravação para remover espaços em branco.
+id_servidor: Chave primária natural, texto alfanumérico (matrícula funcional). Comprimento máximo de 20 caracteres. Aceita letras e números. Aplicação automática de `.strip()` na gravação para remover espaços em branco. 
 
 
 nome: Texto, not null, not blank. Comprimento máximo de 30 caracteres e mínimo de 3 caracteres. Aplicação automática de .strip() e formatação em title case na gravação para padronização.

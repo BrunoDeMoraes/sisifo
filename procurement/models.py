@@ -12,13 +12,6 @@ class Servidor(models.Model):
         max_length=20,
         primary_key=True,
         verbose_name="Matrícula",
-        validators=[
-            RegexValidator(
-                regex=r'^\d+$',
-                message='A matrícula deve conter apenas números.',
-                code='invalid_matricula'
-            )
-        ],
         help_text="Matrícula funcional do servidor (apenas números)"
     )
     nome = models.CharField(
