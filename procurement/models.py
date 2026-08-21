@@ -496,7 +496,10 @@ class Conta(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.unidade} - {self.agencia}/{self.numero}"
+        categoria_nomes = {'CS':'Custeio','IN':'Investimento'}
+        recurso_nomes = {'RG': 'Regular', 'EM': 'Emenda'}
+
+        return f"{self.unidade} {categoria_nomes[self.categoria_economica]} / {recurso_nomes[self.recurso]} {self.numero[:-1]}-{self.numero[-1]}"
 
     def save(self, *args, **kwargs):
         self.unidade = self.unidade.strip().upper()
