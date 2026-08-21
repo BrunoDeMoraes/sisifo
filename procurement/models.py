@@ -268,7 +268,10 @@ class Termo(models.Model):
         ]
 
     def __str__(self):
-        return f"Termo {self.rotulo}/{self.ano}"
+        unidade = self.id_setor.id_origem.unidade
+        nome_setor = self.id_setor.nome_setor
+        return f"{unidade} - {nome_setor} - {self.rotulo}/{self.ano}"
+
 
     def save(self, *args, **kwargs):
         self.rotulo = self.rotulo.strip()
@@ -319,7 +322,7 @@ class Item(models.Model):
         ordering = ['codigo']
 
     def __str__(self):
-        return f"{self.codigo} - {self.descricao}"
+        return f"{self.codigo} - {self.descricao[:21]}"
 
     def save(self, *args, **kwargs):
         self.codigo = self.codigo.strip().upper()
@@ -345,7 +348,7 @@ class Produto(Item):
         ordering = ['item_ptr__codigo']
 
     def __str__(self):
-        return f"{self.codigo} - {self.apresentacao}"
+        return f"{self.codigo} - {self.descricao[:21]}"
 
     def save(self, *args, **kwargs):
         # Durante criação usa self.tipo diretamente
@@ -541,7 +544,18 @@ class Recurso(models.Model):
         ordering = ['-exercicio', 'id_conta']
 
     def __str__(self):
-        return f"{self.id_conta} - {self.exercicio}"
+        unidade = self.id_conta.unidade
+        categoria = self.id_conta.get_categoria_economica_display()
+
+        if self.id_conta.recurso == Conta.RecursoChoices.EMENDA:
+            try:
+                emenda = self.emenda
+                return f"{unidade} - {categoria} - Emenda {emenda.numero} ({emenda.parlamentar})"
+            except Emenda.DoesNotExist:
+                return f"{unidade} - {categoria} - Emenda (sem dados vinculados)"
+
+        return f"{unidade} - {categoria} - Regular {self.exercicio}"
+
 
     def save(self, *args, **kwargs):
         # Durante criação usa id_conta_id diretamente
