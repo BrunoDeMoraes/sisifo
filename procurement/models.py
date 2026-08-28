@@ -854,7 +854,7 @@ class Contato(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.cnpj_fornecedor} - {self.contato}"
+        return f"{self.email}"
 
     def save(self, *args, **kwargs):
         self.email = self.email.strip().lower()
@@ -1158,19 +1158,11 @@ class Aquisicao(models.Model):
         null=True,
         verbose_name="Data da Ordem de Fornecimento"
     )
-    sei_dodf = models.CharField(
-        max_length=30,
-        blank=True,
-        null=True,
-        validators=[
-            RegexValidator(
-                regex=r'^\d+$',
-                message='O SEI DODF deve conter apenas números.',
-                code='invalid_sei_dodf'
-            )
-        ],
-        verbose_name="SEI DODF"
+    upload_dodf = models.BooleanField(
+        default=False,
+        verbose_name="Upload DODF"
     )
+
     data_publicacao = models.DateField(
         blank=True,
         null=True,
@@ -1298,9 +1290,6 @@ class Aquisicao(models.Model):
                     valor_anterior=str(old.id_fornecedor_id),
                     valor_novo=str(self.id_fornecedor_id)
                 )
-
-        if self.sei_dodf:
-            self.sei_dodf = self.sei_dodf.strip()
 
         super().save(*args, **kwargs)
 
