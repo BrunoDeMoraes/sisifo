@@ -1162,11 +1162,19 @@ class Aquisicao(models.Model):
         default=False,
         verbose_name="Upload DODF"
     )
-
     data_publicacao = models.DateField(
         blank=True,
         null=True,
         verbose_name="Data de Publicação"
+    )
+    cancelada = models.BooleanField(
+        default=False,
+        verbose_name="Cancelada"
+    )
+    observacao = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Observações"
     )
     data_cadastro = models.DateTimeField(
         auto_now_add=True,
@@ -1197,6 +1205,12 @@ class Aquisicao(models.Model):
         from django.db.models import Sum, F
         from decimal import Decimal
         
+        # Validação 0: não permitir cancelar aquisição com pagamentos registrados
+        if self.cancelada and self.pk:
+            if Pagamento.objects.filter(id_aquisicao=self).exists():
+                raise ValueError(
+                    'Não é possível cancelar uma aquisição que possui pagamentos registrados'
+                )
 
         # Validação 1: id_servico × tipo do item
         if self.id_servico_id:
@@ -1221,7 +1235,7 @@ class Aquisicao(models.Model):
                 )
 
         # Validações financeiras só quando preco e quantidade_adquirida estiverem preenchidos
-        if self.preco and self.quantidade_adquirida:
+        if self.preco and self.quantidade_adquirida and not self.cancelada:
             valor_atual = Decimal(str(self.preco)) * Decimal(self.quantidade_adquirida)
             ano_aquisicao = self.id_termo.ano
 
@@ -1232,7 +1246,8 @@ class Aquisicao(models.Model):
                     id_item=self.id_item,
                     id_termo__ano=ano_aquisicao,
                     preco__isnull=False,
-                    quantidade_adquirida__isnull=False
+                    quantidade_adquirida__isnull=False,
+                    cancelada=False
                 ).exclude(pk=self.pk).aggregate(
                     total=Sum(F('preco') * F('quantidade_adquirida'))
                 )['total'] or 0
@@ -1254,7 +1269,8 @@ class Aquisicao(models.Model):
                 soma_recurso = Aquisicao.objects.filter(
                     id_recurso=self.id_recurso,
                     preco__isnull=False,
-                    quantidade_adquirida__isnull=False
+                    quantidade_adquirida__isnull=False,
+                    cancelada=False
                 ).exclude(pk=self.pk).aggregate(
                     total=Sum(F('preco') * F('quantidade_adquirida'))
                 )['total'] or 0
@@ -1290,6 +1306,9 @@ class Aquisicao(models.Model):
                     valor_anterior=str(old.id_fornecedor_id),
                     valor_novo=str(self.id_fornecedor_id)
                 )
+
+        if self.observacao:
+            self.observacao = self.observacao.strip()
 
         super().save(*args, **kwargs)
 
