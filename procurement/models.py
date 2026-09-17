@@ -1205,6 +1205,7 @@ class Aquisicao(models.Model):
         from django.db.models import Sum, F
         from decimal import Decimal
         
+        
         # Validação 0: não permitir cancelar aquisição com pagamentos registrados
         if self.cancelada and self.pk:
             if Pagamento.objects.filter(id_aquisicao=self).exists():
