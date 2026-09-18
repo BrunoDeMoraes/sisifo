@@ -1199,7 +1199,8 @@ class Aquisicao(models.Model):
         ]
 
     def __str__(self):
-        return f"Aquisição {self.id_aquisicao} - {self.id_item}"
+        numero_processo = self.id_termo.id_processo.numero_sei
+        return f"{numero_processo} - Aquisição {self.id_aquisicao} - {self.id_item}"
 
     def save(self, *args, **kwargs):
         from django.db.models import Sum, F
