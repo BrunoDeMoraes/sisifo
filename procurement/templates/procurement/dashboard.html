@@ -1,0 +1,13 @@
+<!-- procurement/templates/procurement/dashboard.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel</title>
+</head>
+<body>
+    <h1>Bem-vindo, {{ user.username }}!</h1>
+    <p>Você está autenticado com sucesso.</p>
+    <a href="{% url 'logout' %}">Sair</a>
+</body>
+</html>

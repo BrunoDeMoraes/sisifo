@@ -1,7 +1,6 @@
 from django.urls import path
-
-from . import views
+from procurement import views as procurement_views
 
 urlpatterns = [
-    path("", views.index, name="index"),
+    path('dashboard/', procurement_views.dashboard, name='dashboard'),
 ]

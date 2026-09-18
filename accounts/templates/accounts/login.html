@@ -1,0 +1,36 @@
+<!-- accounts/templates/accounts/login.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Entrar no Sistema</title>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Login</h1>
+
+        {% if form.errors %}
+            <p class="error">Usuário ou senha inválidos.</p>
+        {% endif %}
+
+        {% if next %}
+            <p class="info">Você precisa fazer login para acessar esta página.</p>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="field">
+                {{ form.username.label_tag }}
+                {{ form.username }}
+            </div>
+            <div class="field">
+                {{ form.password.label_tag }}
+                {{ form.password }}
+            </div>
+            <input type="hidden" name="next" value="{{ next }}">
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+</body>
+</html>

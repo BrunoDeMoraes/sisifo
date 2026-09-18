@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'procurement.apps.ProcurementConfig',
+    'accounts.apps.AccountsConfig',
 ]
 
 MIDDLEWARE = [
@@ -119,3 +120,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# login
+
+LOGIN_URL = 'login'                 # para onde @login_required redireciona se não autenticado
+LOGIN_REDIRECT_URL = 'dashboard'    # para onde vai após login bem-sucedido
+LOGOUT_REDIRECT_URL = 'login'       # para onde vai após logout
